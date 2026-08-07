@@ -1,0 +1,29 @@
+{% load static %}
+<header class="navbar navbar-public" id="public-navbar">
+  <div class="container navbar-inner">
+    <a class="brand" href="/">
+      <span class="brand-mark" aria-hidden="true">
+        <img src="{% static 'logo.png' %}" alt="JanSetu Logo" class="brand-logo-img">
+      </span>
+      <span class="brand-name">Jan<span>Setu</span></span>
+    </a>
+
+    <nav class="nav-links" id="public-nav-links">
+      <a href="/#features" class="nav-link" data-i18n="features">Features</a>
+      <a href="/#how" class="nav-link" data-i18n="how_it_works">How it works</a>
+      <a href="/#roles" class="nav-link" data-i18n="roles">Roles</a>
+    </nav>
+
+    <div class="navbar-actions">
+      <label class="lang-switcher" title="Language">
+        <svg class="icon"><use href="{% static 'icons.svg' %}#icon-globe"/></svg>
+        <select id="lang-select" aria-label="Language"></select>
+      </label>
+      <button class="icon-btn" id="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode">
+        <svg class="icon"><use href="{% static 'icons.svg' %}#icon-sun"/></svg>
+      </button>
+      <a href="/login/" class="btn btn-ghost btn-sm" data-i18n="login">Login</a>
+      <a href="/register/" class="btn btn-primary btn-sm" data-i18n="register">Register</a>
+    </div>
+  </div>
+</header>

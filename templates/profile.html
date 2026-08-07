@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Profile | JanSetu{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+  {% include "partials/sidebar.html" %}
+  <div class="app-main">
+    {% include "partials/app-topbar.html" with page_title="Profile" page_title_key="profile" %}
+
+    <main class="app-content profile-content">
+      <section class="card profile-hero">
+        <span class="avatar avatar-xl" id="profile-avatar">?</span>
+        <div>
+          <h2 id="profile-name">—</h2>
+          <p class="muted" id="profile-email">—</p>
+          <div class="chip-row">
+            <span class="badge badge-info" id="profile-role">Citizen</span>
+            <span class="badge badge-verified" id="profile-status">—</span>
+          </div>
+          <p class="muted small" id="profile-username" style="margin:6px 0 0;"></p>
+        </div>
+      </section>
+
+      <div class="grid-2">
+        <section class="card">
+          <div class="card-head"><h2 data-i18n="account_info">Account Information</h2></div>
+          <form id="profile-form" novalidate>
+            <div class="field">
+              <label for="full_name" data-i18n="full_name">Full Name</label>
+              <div class="input-wrap">
+                <svg class="icon"><use href="{% static 'icons.svg' %}#icon-user"/></svg>
+                <input type="text" id="full_name" name="full_name" required>
+              </div>
+              <p class="field-error" data-error-for="full_name"></p>
+            </div>
+            <div class="field">
+              <label for="phone" data-i18n="phone">Phone Number</label>
+              <div class="input-wrap">
+                <svg class="icon"><use href="{% static 'icons.svg' %}#icon-phone"/></svg>
+                <input type="tel" id="phone" name="phone">
+              </div>
+              <p class="field-error" data-error-for="phone"></p>
+            </div>
+            <div class="field">
+              <label for="email" data-i18n="email">Email</label>
+              <div class="input-wrap">
+                <svg class="icon"><use href="{% static 'icons.svg' %}#icon-mail"/></svg>
+                <input type="email" id="email" name="email" disabled>
+              </div>
+              <p class="hint" data-i18n="email_locked">Email cannot be changed.</p>
+            </div>
+            <button type="submit" class="btn btn-primary" data-i18n="save_changes">Save Changes</button>
+          </form>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2 data-i18n="change_password">Change Password</h2></div>
+          <form id="password-form" novalidate>
+            <div class="field">
+              <label for="current_password" data-i18n="current_password">Current Password</label>
+              <div class="input-wrap">
+                <svg class="icon"><use href="{% static 'icons.svg' %}#icon-lock"/></svg>
+                <input type="password" id="current_password" name="current_password" autocomplete="current-password" required>
+              </div>
+              <p class="field-error" data-error-for="current_password"></p>
+            </div>
+            <div class="field">
+              <label for="new_password" data-i18n="new_password">New Password</label>
+              <div class="input-wrap">
+                <svg class="icon"><use href="{% static 'icons.svg' %}#icon-lock"/></svg>
+                <input type="password" id="new_password" name="new_password" autocomplete="new-password" required>
+              </div>
+              <p class="field-error" data-error-for="new_password"></p>
+            </div>
+            <div class="field">
+              <label for="confirm_password" data-i18n="confirm_password">Confirm Password</label>
+              <div class="input-wrap">
+                <svg class="icon"><use href="{% static 'icons.svg' %}#icon-lock"/></svg>
+                <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password" required>
+              </div>
+              <p class="field-error" data-error-for="confirm_password"></p>
+            </div>
+            <button type="submit" class="btn btn-primary" data-i18n="update_password">Update Password</button>
+          </form>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/profile.js' %}"></script>
+{% endblock %}

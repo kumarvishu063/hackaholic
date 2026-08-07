@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Super Admin Dashboard | JanSetu{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+  {% include "partials/sidebar.html" with role="super_admin" %}
+  <div class="app-main">
+    {% include "partials/app-topbar.html" with page_title="Admin Dashboard" page_title_key="admin_dashboard" %}
+
+    <main class="app-content">
+
+      <!-- ============================ STATS ============================ -->
+      <section class="stats-row" aria-label="Platform statistics">
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-user"/></svg></div>
+          <div><strong id="stat-citizens">0</strong><span data-i18n="total_citizens">Total Citizens</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-clock"/></svg></div>
+          <div><strong id="stat-pending-validators">0</strong><span data-i18n="pending_validators">Pending Validators</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-clock"/></svg></div>
+          <div><strong id="stat-pending-officials">0</strong><span data-i18n="pending_officials">Pending Officials</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-check-circle"/></svg></div>
+          <div><strong id="stat-approved-validators">0</strong><span data-i18n="approved_validators">Approved Validators</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-check-circle"/></svg></div>
+          <div><strong id="stat-approved-officials">0</strong><span data-i18n="approved_officials">Approved Officials</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-x-circle"/></svg></div>
+          <div><strong id="stat-rejected">0</strong><span data-i18n="rejected_applications">Rejected Applications</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-flag"/></svg></div>
+          <div><strong id="stat-pending-complaints">0</strong><span data-i18n="pending">Pending Complaints</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-check-circle"/></svg></div>
+          <div><strong id="stat-resolved-complaints">0</strong><span data-i18n="resolved">Resolved Complaints</span></div>
+        </div>
+      </section>
+
+      <!-- ==================== QUICK LINKS ==================== -->
+      <section class="card">
+        <div class="card-head">
+          <h2 data-i18n="admin_panel_shortcuts">Admin Panel</h2>
+        </div>
+        <div class="quick-links">
+          <a href="/admin/applications/" class="quick-link">
+            <svg class="icon"><use href="{% static 'icons.svg' %}#icon-doc"/></svg>
+            <span data-i18n="admin_applications">Applications</span>
+          </a>
+          <a href="/admin/users/" class="quick-link">
+            <svg class="icon"><use href="{% static 'icons.svg' %}#icon-user"/></svg>
+            <span data-i18n="admin_users">Users</span>
+          </a>
+          <a href="/admin/complaints/" class="quick-link">
+            <svg class="icon"><use href="{% static 'icons.svg' %}#icon-clipboard"/></svg>
+            <span data-i18n="admin_complaints">Complaints</span>
+          </a>
+          <a href="/admin/reports/" class="quick-link">
+            <svg class="icon"><use href="{% static 'icons.svg' %}#icon-workflow"/></svg>
+            <span data-i18n="admin_reports">Reports</span>
+          </a>
+          <a href="/admin/audit/" class="quick-link">
+            <svg class="icon"><use href="{% static 'icons.svg' %}#icon-shield"/></svg>
+            <span data-i18n="admin_audit">Audit Log</span>
+          </a>
+          <a href="/admin/login-history/" class="quick-link">
+            <svg class="icon"><use href="{% static 'icons.svg' %}#icon-clock"/></svg>
+            <span data-i18n="admin_login_history">Login History</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- ==================== RECENT ACTIVITY ==================== -->
+      <section class="admin-hero">
+        <div class="card">
+          <div class="card-head">
+            <h2 data-i18n="recent_signups">Recent Signups</h2>
+            <a href="/admin/users/" class="btn btn-ghost btn-sm" data-i18n="view_all">View all</a>
+          </div>
+          <div class="feed-list" id="recent-users">
+            <div class="skeleton-card"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <h2 data-i18n="recent_activity">Recent Activity</h2>
+            <a href="/admin/audit/" class="btn btn-ghost btn-sm" data-i18n="view_all">View all</a>
+          </div>
+          <div class="feed-list" id="recent-audit">
+            <div class="skeleton-card"></div>
+          </div>
+        </div>
+      </section>
+
+      <p class="muted small" id="generated-at"></p>
+    </main>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/admin.js' %}"></script>
+{% endblock %}

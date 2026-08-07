@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}JanSetu — AI-Powered Citizen Grievance Management{% endblock %}
+{% block body_class %}landing-page{% endblock %}
+
+{% block body %}
+
+{% include "partials/public-navbar.html" %}
+
+<!-- ============================== HERO ============================== -->
+<section class="hero">
+  <div class="container hero-grid">
+    <div class="hero-copy">
+      <span class="hero-badge">
+        <svg class="icon"><use href="{% static 'icons.svg' %}#icon-shield"/></svg>
+        <span data-i18n="hero_badge">AI-Powered Grievance Redressal</span>
+      </span>
+      <h1 class="hero-title">
+        <span data-i18n="hero_title_1">Citizen Grievances,</span><br>
+        <span class="gradient-text" data-i18n="hero_title_2">Resolved Faster.</span>
+      </h1>
+      <p class="hero-sub" data-i18n="hero_sub">
+        JanSetu lets you report issues with your voice, photos and GPS location.
+        AI transcribes, de-identifies and prioritises every complaint — then tracks
+        it from submission to resolution.
+      </p>
+      <div class="hero-cta">
+        <a href="/register/" class="btn btn-primary btn-lg">
+          <svg class="icon"><use href="{% static 'icons.svg' %}#icon-plus"/></svg>
+          <span data-i18n="register_citizen">Register as Citizen</span>
+        </a>
+        <a href="/login/" class="btn btn-ghost btn-lg" data-i18n="login_now">Login</a>
+      </div>
+      <div class="hero-trust">
+        <div class="trust-item"><span class="trust-dot dot-saffron"></span><span data-i18n="trust_secure">JWT secured</span></div>
+        <div class="trust-item"><span class="trust-dot dot-green"></span><span data-i18n="trust_private">PII removed by AI</span></div>
+        <div class="trust-item"><span class="trust-dot dot-blue"></span><span data-i18n="trust_verified">SHA-256 integrity</span></div>
+      </div>
+    </div>
+
+    <div class="hero-visual" aria-hidden="true">
+      <div class="mock-card mock-main">
+        <div class="mock-card-head">
+          <span class="mock-id">JST-4K9XM2P7</span>
+          <span class="badge badge-pending">Pending Validation</span>
+        </div>
+        <p class="mock-desc">"There is a large pothole near the MG Road junction causing accidents every evening…"</p>
+        <div class="mock-meta">
+          <span class="chip"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-map-pin"/></svg>MG Road, Bengaluru</span>
+          <span class="chip chip-urgency"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-flag"/></svg>Urgency 8/10</span>
+        </div>
+      </div>
+      <div class="mock-card mock-float mock-ai">
+        <svg class="icon icon-accent"><use href="{% static 'icons.svg' %}#icon-spark"/></svg>
+        <div>
+          <strong data-i18n="mock_ai_title">AI Summary</strong>
+          <small data-i18n="mock_ai_body">Pothole on MG Road causing accidents. Roads dept. advised.</small>
+        </div>
+      </div>
+      <div class="mock-card mock-float mock-track">
+        <svg class="icon icon-success"><use href="{% static 'icons.svg' %}#icon-check-circle"/></svg>
+        <div><strong data-i18n="mock_track_title">Tracked to Resolution</strong><small>Citizen → Validate → Resolve</small></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== STATS ============================== -->
+<section class="stats-band">
+  <div class="container stats-grid">
+    <div class="stat"><strong>3</strong><span data-i18n="stat_roles">User Roles</span></div>
+    <div class="stat"><strong>5</strong><span data-i18n="stat_langs">Indian Languages</span></div>
+    <div class="stat"><strong>9</strong><span data-i18n="stat_categories">Complaint Categories</span></div>
+    <div class="stat"><strong>1–10</strong><span data-i18n="stat_urgency">AI Urgency Score</span></div>
+  </div>
+</section>
+
+<!-- ============================== FEATURES ============================== -->
+<section class="section" id="features">
+  <div class="container">
+    <h2 class="section-title" data-i18n="features_title">Everything a modern grievance desk needs</h2>
+    <p class="section-sub" data-i18n="features_sub">Built with a clean government-portal inspired UI, powered by Google Gemini AI.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-mic"/></svg></div>
+        <h3 data-i18n="f_voice_title">Voice-to-Text Complaints</h3>
+        <p data-i18n="f_voice_body">Record a complaint with your browser microphone — AI transcribes it automatically.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-camera"/></svg></div>
+        <h3 data-i18n="f_photo_title">Photo Evidence</h3>
+        <p data-i18n="f_photo_body">Capture or upload photos as evidence right from the dashboard.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-map-pin"/></svg></div>
+        <h3 data-i18n="f_gps_title">Auto GPS Location</h3>
+        <p data-i18n="f_gps_body">One tap pins your exact location and resolves the street address.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-lock"/></svg></div>
+        <h3 data-i18n="f_pii_title">Privacy by Design</h3>
+        <p data-i18n="f_pii_body">AI strips names, phones and IDs from every complaint transcript.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-flag"/></svg></div>
+        <h3 data-i18n="f_urgency_title">AI Urgency Scoring</h3>
+        <p data-i18n="f_urgency_body">Every complaint gets a 1–10 urgency score so critical issues surface first.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-hash"/></svg></div>
+        <h3 data-i18n="f_hash_title">Tamper-Proof Tracking</h3>
+        <p data-i18n="f_hash_body">Each complaint carries a unique ID, 6-digit PIN and SHA-256 integrity hash.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-globe"/></svg></div>
+        <h3 data-i18n="f_lang_title">5 Indian Languages</h3>
+        <p data-i18n="f_lang_body">English, हिंदी, मराठी, ಕನ್ನಡ and বাংলা — switch instantly.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-workflow"/></svg></div>
+        <h3 data-i18n="f_workflow_title">3-Role Workflow</h3>
+        <p data-i18n="f_workflow_body">Citizens submit, validators review, officials resolve — all in one system.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== HOW IT WORKS ============================== -->
+<section class="section section-alt" id="how">
+  <div class="container">
+    <h2 class="section-title" data-i18n="how_title">How JanSetu works</h2>
+    <p class="section-sub" data-i18n="how_sub">A transparent pipeline from complaint to resolution.</p>
+    <div class="steps-grid">
+      <div class="step">
+        <span class="step-num">1</span>
+        <div class="step-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-mic"/></svg></div>
+        <h3 data-i18n="step1_title">Submit</h3>
+        <p data-i18n="step1_body">Record your complaint with voice, photo and GPS — or just type it.</p>
+      </div>
+      <div class="step">
+        <span class="step-num">2</span>
+        <div class="step-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-spark"/></svg></div>
+        <h3 data-i18n="step2_title">AI Analysis</h3>
+        <p data-i18n="step2_body">Gemini transcribes audio, removes PII, summarises and scores urgency.</p>
+      </div>
+      <div class="step">
+        <span class="step-num">3</span>
+        <div class="step-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-check-circle"/></svg></div>
+        <h3 data-i18n="step3_title">Validate</h3>
+        <p data-i18n="step3_body">A validator verifies the evidence and remarks before it moves ahead.</p>
+      </div>
+      <div class="step">
+        <span class="step-num">4</span>
+        <div class="step-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-flag"/></svg></div>
+        <h3 data-i18n="step4_title">Resolve</h3>
+        <p data-i18n="step4_body">The official department acts and marks the complaint resolved.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== ROLES ============================== -->
+<section class="section" id="roles">
+  <div class="container">
+    <h2 class="section-title" data-i18n="roles_title">One platform, three roles</h2>
+    <p class="section-sub" data-i18n="roles_sub">Each role has a dedicated dashboard with the right tools.</p>
+    <div class="roles-grid">
+      <div class="role-card">
+        <div class="role-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-user"/></svg></div>
+        <h3 data-i18n="role_citizen">Citizen</h3>
+        <ul>
+          <li data-i18n="rc_1">Register & submit complaints</li>
+          <li data-i18n="rc_2">Voice, photo & GPS evidence</li>
+          <li data-i18n="rc_3">Track status & history</li>
+        </ul>
+        <a href="/register/" class="btn btn-outline btn-sm" data-i18n="get_started">Get Started</a>
+      </div>
+      <div class="role-card role-card-featured">
+        <div class="role-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-shield"/></svg></div>
+        <h3 data-i18n="role_validator">Validator</h3>
+        <ul>
+          <li data-i18n="rv_1">Review pending complaints</li>
+          <li data-i18n="rv_2">Check transcript, photo & location</li>
+          <li data-i18n="rv_3">Verify or reject with remarks</li>
+        </ul>
+        <a href="/login/" class="btn btn-primary btn-sm" data-i18n="login_as_validator">Login as Validator</a>
+      </div>
+      <div class="role-card">
+        <div class="role-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-flag"/></svg></div>
+        <h3 data-i18n="role_official">Official</h3>
+        <ul>
+          <li data-i18n="ro_1">Search, filter & sort complaints</li>
+          <li data-i18n="ro_2">View complete details</li>
+          <li data-i18n="ro_3">Add remarks & mark resolved</li>
+        </ul>
+        <a href="/login/" class="btn btn-outline btn-sm" data-i18n="login_as_official">Login as Official</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== CTA ============================== -->
+<section class="cta-band">
+  <div class="container cta-inner">
+    <h2 data-i18n="cta_title">Have an issue in your neighbourhood?</h2>
+    <p data-i18n="cta_sub">It takes less than a minute to raise a complaint that reaches the right authority.</p>
+    <a href="/register/" class="btn btn-accent btn-lg" data-i18n="cta_btn">Raise Your First Complaint</a>
+  </div>
+</section>
+
+{% include "partials/footer.html" %}
+
+{% endblock %}

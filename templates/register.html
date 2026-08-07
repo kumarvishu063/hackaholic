@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Register | JanSetu{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+
+{% block body %}
+<div class="auth-bg" aria-hidden="true"></div>
+<div class="auth-shell auth-shell-lg">
+  <div class="auth-top">
+    <a class="brand" href="/">
+      <span class="brand-mark"><img src="{% static 'logo.png' %}" alt="JanSetu Logo" class="brand-logo-img"></span>
+      <span class="brand-name">Jan<span>Setu</span></span>
+    </a>
+    <div class="auth-controls">
+      <label class="lang-switcher" title="Language">
+        <svg class="icon"><use href="{% static 'icons.svg' %}#icon-globe"/></svg>
+        <select id="lang-select" aria-label="Language"></select>
+      </label>
+      <button class="icon-btn" id="theme-toggle" aria-label="Toggle dark mode">
+        <svg class="icon"><use href="{% static 'icons.svg' %}#icon-sun"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <main class="auth-card">
+    <div class="auth-card-head">
+      <h1 data-i18n="create_account">Create your account</h1>
+      <p data-i18n="register_subtitle">Join JanSetu and start using the platform.</p>
+    </div>
+
+    <!-- Role selector -->
+    <div class="role-switch">
+      <div class="segmented" role="tablist" aria-label="Register as">
+        <button type="button" class="seg active" data-seg="citizen" data-i18n="role_citizen">Citizen</button>
+        <button type="button" class="seg" data-seg="validator" data-i18n="role_validator">Validator</button>
+        <button type="button" class="seg" data-seg="official" data-i18n="role_official">Official</button>
+      </div>
+      <input type="hidden" id="role" value="citizen">
+      <p class="muted small" data-i18n="staff_apply_note">
+        Validator and Official applications are reviewed by an Administrator before you can log in.
+      </p>
+    </div>
+
+    <form id="register-form" novalidate>
+
+      <!-- ===================== CITIZEN FIELDS ===================== -->
+      <fieldset id="citizen-fields">
+        <div class="field">
+          <label for="full_name" data-i18n="full_name">Full Name</label>
+          <div class="input-wrap">
+            <svg class="icon"><use href="{% static 'icons.svg' %}#icon-user"/></svg>
+            <input type="text" id="full_name" name="full_name" placeholder="Aarav Sharma" autocomplete="name" required>
+          </div>
+          <p class="field-error" data-error-for="full_name"></p>
+        </div>
+
+        <div class="field">
+          <label for="email" data-i18n="email">Email</label>
+          <div class="input-wrap">
+            <svg class="icon"><use href="{% static 'icons.svg' %}#icon-mail"/></svg>
+            <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email" required>
+          </div>
+          <p class="field-error" data-error-for="email"></p>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="username" data-i18n="username">Username</label>
+            <div class="input-wrap">
+              <svg class="icon"><use href="{% static 'icons.svg' %}#icon-user"/></svg>
+              <input type="text" id="username" name="username" placeholder="aarav" autocomplete="username">
+            </div>
+            <p class="field-error" data-error-for="username"></p>
+          </div>
+          <div class="field">
+            <label for="phone" data-i18n="phone">Phone Number</label>
+            <div class="input-wrap">
+              <svg class="icon"><use href="{% static 'icons.svg' %}#icon-phone"/></svg>
+              <input type="tel" id="phone" name="phone" placeholder="+91 98765 43210" autocomplete="tel">
+            </div>
+            <p class="field-error" data-error-for="phone"></p>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- ===================== STAFF APPLICATION FIELDS ===================== -->
+      <fieldset id="staff-fields" class="hidden">
+        <h2 class="section-title" data-i18n="application_details">Application Details</h2>
+        <p class="muted small" data-i18n="application_hint">
+          Provide your official details and verification documents. The Administrator will review your application.
+        </p>
+
+        <div class="field">
+          <label for="full_name" data-i18n="full_name">Full Name</label>
+          <div class="input-wrap">
+            <svg class="icon"><use href="{% static 'icons.svg' %}#icon-user"/></svg>
+            <input type="text" id="full_name" name="full_name" placeholder="Priya Iyer" autocomplete="name" required>
+          </div>
+          <p class="field-error" data-error-for="full_name"></p>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="email" data-i18n="email">Email</label>
+            <div class="input-wrap">
+              <svg class="icon"><use href="{% static 'icons.svg' %}#icon-mail"/></svg>
+              <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email" required>
+            </div>
+            <p class="field-error" data-error-for="email"></p>
+          </div>
+          <div class="field">
+            <label for="phone" data-i18n="phone">Phone Number</label>
+            <div class="input-wrap">
+              <svg class="icon"><use href="{% static 'icons.svg' %}#icon-phone"/></svg>
+              <input type="tel" id="phone" name="phone" placeholder="+91 98765 43210" autocomplete="tel">
+            </div>
+            <p class="field-error" data-error-for="phone"></p>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="username" data-i18n="username">Username</label>
+          <div class="input-wrap">
+            <svg class="icon"><use href="{% static 'icons.svg' %}#icon-user"/></svg>
+            <input type="text" id="username" name="username" placeholder="priya" autocomplete="username">
+          </div>
+          <p class="field-error" data-error-for="username"></p>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="department" data-i18n="department">Department</label>
+            <select id="department" name="department" required>
+              <option value="" disabled selected data-i18n="select_department">Select a department…</option>
+              <option value="Urban Development" data-i18n="dept_urban_development">Urban Development</option>
+              <option value="Public Works" data-i18n="dept_public_works">Public Works</option>
+              <option value="Water Supply" data-i18n="cat_water">Water Supply</option>
+              <option value="Sanitation & Garbage" data-i18n="cat_sanitation">Sanitation &amp; Garbage</option>
+              <option value="Electricity" data-i18n="cat_electricity">Electricity</option>
+              <option value="Public Health" data-i18n="cat_health">Public Health</option>
+              <option value="Education" data-i18n="cat_education">Education</option>
+              <option value="Police & Safety" data-i18n="cat_police">Police &amp; Safety</option>
+              <option value="Environment" data-i18n="cat_environment">Environment</option>
+              <option value="Roads & Transport" data-i18n="cat_roads">Roads &amp; Transport</option>
+            </select>
+            <p class="field-error" data-error-for="department"></p>
+          </div>
+          <div class="field">
+            <label for="office_name" data-i18n="office_name">Office Name</label>
+            <div class="input-wrap">
+              <svg class="icon"><use href="{% static 'icons.svg' %}#icon-building"/></svg>
+              <input type="text" id="office_name" name="office_name" placeholder="Bengaluru Civic Office">
+            </div>
+            <p class="field-error" data-error-for="office_name"></p>
+          </div>
+        </div>
+
+        <!-- Verification documents -->
+        <h2 class="section-title" data-i18n="verification_documents">Verification Documents</h2>
+        <div class="field-row">
+          <div class="field">
+            <label data-i18n="government_id">Government ID Upload</label>
+            <label class="file-drop" for="government_id_document">
+              <svg class="icon"><use href="{% static 'icons.svg' %}#icon-upload"/></svg>
+              <span data-i18n="choose_file">Choose file</span>
+            </label>
+            <input type="file" id="government_id_document" name="government_id_document" accept=".jpg,.jpeg,.png,.pdf,.webp" class="file-input hidden">
+            <p class="file-name" id="government_id_document-name"></p>
+            <p class="field-error" data-error-for="government_id_document"></p>
+          </div>
+          <div class="field">
+            <label data-i18n="employee_card">Employee ID Card Upload</label>
+            <label class="file-drop" for="employee_card">
+              <svg class="icon"><use href="{% static 'icons.svg' %}#icon-upload"/></svg>
+              <span data-i18n="choose_file">Choose file</span>
+            </label>
+            <input type="file" id="employee_card" name="employee_card" accept=".jpg,.jpeg,.png,.pdf,.webp" class="file-input hidden">
+            <p class="file-name" id="employee_card-name"></p>
+            <p class="field-error" data-error-for="employee_card"></p>
+          </div>
+          <div class="field">
+            <label data-i18n="profile_photo">Profile Photograph</label>
+            <label class="file-drop" for="profile_photo">
+              <svg class="icon"><use href="{% static 'icons.svg' %}#icon-upload"/></svg>
+              <span data-i18n="choose_file">Choose file</span>
+            </label>
+            <input type="file" id="profile_photo" name="profile_photo" accept=".jpg,.jpeg,.png,.webp" class="file-input hidden">
+            <p class="file-name" id="profile_photo-name"></p>
+            <p class="field-error" data-error-for="profile_photo"></p>
+          </div>
+        </div>
+
+        <!-- Face capture -->
+        <h2 class="section-title" data-i18n="face_registration">Face Registration</h2>
+        <p class="muted small" data-i18n="face_register_hint">
+          Capture 5–10 images of your face using your webcam. These generate an encrypted face profile used to secure your login.
+        </p>
+        <div class="face-capture">
+          <div class="face-video-wrap">
+            <video id="face-video" class="face-video hidden" autoplay playsinline muted></video>
+            <div class="face-placeholder" id="face-placeholder">
+              <svg class="icon icon-xl"><use href="{% static 'icons.svg' %}#icon-camera"/></svg>
+              <p data-i18n="face_camera_off">Camera preview will appear here.</p>
+            </div>
+          </div>
+          <div class="face-capture-actions">
+            <button type="button" class="btn btn-outline" id="face-capture-btn" data-i18n="start_face_capture">Start Face Capture</button>
+            <div class="face-count" id="face-count">0</div>
+            <p class="muted small" data-i18n="face_frames_hint">at least 5 frames required</p>
+          </div>
+          <p class="face-status" id="face-status"></p>
+          <p class="field-error" data-error-for="face"></p>
+        </div>
+      </fieldset>
+
+      <!-- Shared credentials -->
+      <fieldset id="credentials-fields">
+        <h2 class="section-title" data-i18n="account_security">Account Security</h2>
+        <div class="field">
+          <label for="password" data-i18n="password">Password</label>
+          <div class="input-wrap">
+            <svg class="icon"><use href="{% static 'icons.svg' %}#icon-lock"/></svg>
+            <input type="password" id="password" name="password" placeholder="Min. 8 characters with a number" autocomplete="new-password" required>
+            <button type="button" class="input-action" data-toggle-password aria-label="Show password">
+              <svg class="icon"><use href="{% static 'icons.svg' %}#icon-eye"/></svg>
+            </button>
+          </div>
+          <p class="field-error" data-error-for="password"></p>
+        </div>
+
+        <div class="field">
+          <label for="confirm_password" data-i18n="confirm_password">Confirm Password</label>
+          <div class="input-wrap">
+            <svg class="icon"><use href="{% static 'icons.svg' %}#icon-lock"/></svg>
+            <input type="password" id="confirm_password" name="confirm_password" placeholder="Repeat your password" autocomplete="new-password" required>
+          </div>
+          <p class="field-error" data-error-for="confirm_password"></p>
+        </div>
+      </fieldset>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg" id="register-btn">
+        <span data-i18n="register">Create Account</span>
+      </button>
+    </form>
+
+    <p class="auth-alt">
+      <span data-i18n="have_account">Already have an account?</span>
+      <a href="/login/" data-i18n="login">Login</a>
+    </p>
+  </main>
+</div>
+
+<!-- Application submitted modal -->
+<div class="modal hidden" id="result-modal" role="dialog" aria-modal="true">
+  <div class="modal-overlay"></div>
+  <div class="modal-card modal-sm">
+    <button class="modal-close" data-close-modal aria-label="Close">
+      <svg class="icon"><use href="{% static 'icons.svg' %}#icon-x"/></svg>
+    </button>
+    <div class="modal-body">
+      <div class="result-icon success"><svg class="icon icon-xl"><use href="{% static 'icons.svg' %}#icon-check-circle"/></svg></div>
+      <h2 data-i18n="application_submitted">Application Submitted</h2>
+      <p id="result-message" data-i18n="application_pending_msg">Your application has been submitted successfully. Please wait for Admin verification.</p>
+      <div class="mono-id-wrap">
+        <span data-i18n="application_id">Application ID</span>
+        <strong class="mono-id" id="result-application-id">—</strong>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-primary btn-block" data-close-modal data-i18n="ok">OK</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/face.js' %}"></script>
+<script src="{% static 'js/auth.js' %}"></script>
+{% endblock %}

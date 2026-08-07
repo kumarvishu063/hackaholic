@@ -1,0 +1,5 @@
+# JanSetu — development & test dependencies
+-r requirements.txt
+
+# In-memory MongoDB used for unit tests and local E2E runs without a DB server.
+mongomock>=4.1

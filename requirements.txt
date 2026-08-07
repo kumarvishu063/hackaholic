@@ -1,0 +1,22 @@
+# JanSetu — backend dependencies
+Django>=5.2,<6.0
+djangorestframework>=3.15,<4
+mongoengine>=0.29
+pymongo>=4.8
+PyJWT>=2.8,<3
+bcrypt>=4.1
+google-genai>=1.0
+python-dotenv>=1.0
+
+# --- Admin Approval & Face Authentication ---------------------------------
+# Fernet encryption of facial embeddings.
+cryptography>=42
+# Face detection + embedding extraction (real mode).
+# opencv-python-headless keeps the wheel small; use `opencv-python` if you
+# also want GUI/display functionality.
+opencv-python-headless>=4.9
+# Optional (heavier, pulls in TensorFlow): state-of-the-art embeddings.
+#   pip install deepface
+# When deepface / face_recognition are absent, JanSetu falls back to an
+# OpenCV local-binary-pattern embedding, and finally to a deterministic mock
+# so the pipeline always works. See FACE_DEMO_MODE in .env.

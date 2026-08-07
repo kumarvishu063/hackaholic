@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Login | JanSetu{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+
+{% block body %}
+<div class="auth-bg" aria-hidden="true"></div>
+<div class="auth-shell">
+  <div class="auth-top">
+    <a class="brand" href="/">
+      <span class="brand-mark"><img src="{% static 'logo.png' %}" alt="JanSetu Logo" class="brand-logo-img"></span>
+      <span class="brand-name">Jan<span>Setu</span></span>
+    </a>
+    <div class="auth-controls">
+      <label class="lang-switcher" title="Language">
+        <svg class="icon"><use href="{% static 'icons.svg' %}#icon-globe"/></svg>
+        <select id="lang-select" aria-label="Language"></select>
+      </label>
+      <button class="icon-btn" id="theme-toggle" aria-label="Toggle dark mode">
+        <svg class="icon"><use href="{% static 'icons.svg' %}#icon-sun"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- STEP 1 — credentials -->
+  <main class="auth-card" id="credentials-card">
+    <div class="auth-card-head">
+      <h1 data-i18n="welcome_back">Welcome back</h1>
+      <p data-i18n="login_subtitle">Sign in to your JanSetu account.</p>
+    </div>
+
+    <form id="login-form" novalidate>
+      <div class="field">
+        <label for="identifier" data-i18n="email_or_username">Email or Username</label>
+        <div class="input-wrap">
+          <svg class="icon"><use href="{% static 'icons.svg' %}#icon-mail"/></svg>
+          <input type="text" id="identifier" name="identifier" placeholder="you@example.com" autocomplete="username" required>
+        </div>
+        <p class="field-error" data-error-for="identifier"></p>
+      </div>
+
+      <div class="field">
+        <label for="password" data-i18n="password">Password</label>
+        <div class="input-wrap">
+          <svg class="icon"><use href="{% static 'icons.svg' %}#icon-lock"/></svg>
+          <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" required>
+          <button type="button" class="input-action" data-toggle-password aria-label="Show password">
+            <svg class="icon"><use href="{% static 'icons.svg' %}#icon-eye"/></svg>
+          </button>
+        </div>
+        <p class="field-error" data-error-for="password"></p>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg" id="login-btn">
+        <span data-i18n="login">Login</span>
+      </button>
+    </form>
+
+    <p class="auth-alt">
+      <span data-i18n="no_account">Don't have an account?</span>
+      <a href="/register/" data-i18n="register_now">Register here</a>
+    </p>
+
+    <details class="demo-box">
+      <summary data-i18n="demo_creds">Demo credentials</summary>
+      <ul>
+        <li><strong data-i18n="role_citizen">Citizen</strong> — citizen@example.com / Citizen@123</li>
+        <li><strong data-i18n="role_validator">Validator</strong> — validator@example.com / Validator@123 <em>(face auth)</em></li>
+        <li><strong data-i18n="role_official">Official</strong> — official@example.com / Official@123 <em>(face auth)</em></li>
+        <li><strong data-i18n="role_super_admin">Super Admin</strong> — admin@example.com / Admin@123</li>
+      </ul>
+    </details>
+  </main>
+
+  <!-- STEP 2 — face authentication -->
+  <main class="auth-card hidden" id="face-panel">
+    <div class="auth-card-head">
+      <button type="button" class="icon-btn back-chip" id="face-back-btn" aria-label="Back">
+        <svg class="icon"><use href="{% static 'icons.svg' %}#icon-chevron-left"/></svg>
+      </button>
+      <h1 data-i18n="face_authentication">Face Authentication</h1>
+      <p data-i18n="face_step_subtitle">Your password was verified. Complete a quick liveness + face check to continue.</p>
+    </div>
+
+    <div class="face-auth-panel">
+      <div class="face-video-wrap">
+        <video id="face-video" class="face-video hidden" autoplay playsinline muted></video>
+        <div class="face-placeholder" id="face-placeholder">
+          <svg class="icon icon-xl"><use href="{% static 'icons.svg' %}#icon-camera"/></svg>
+          <p data-i18n="face_camera_off">Camera preview will appear here.</p>
+        </div>
+      </div>
+
+      <p class="face-status" id="face-status"></p>
+      <p class="face-challenge" id="face-challenge"></p>
+
+      <button type="button" class="btn btn-primary btn-block btn-lg" id="face-start-btn" data-i18n="start_face_verify">Start Face Verification</button>
+      <button type="button" class="btn btn-ghost btn-block" id="face-cancel-btn" data-i18n="cancel">Cancel</button>
+
+      <!-- Degraded-mode manual acknowledgements (shown only when face-api.js is unavailable) -->
+      <div class="face-degraded hidden" id="face-degraded-actions">
+        <p class="muted small" data-i18n="face_manual_mode">Automatic face tracking is unavailable. Acknowledge each challenge as you perform it.</p>
+        <div class="face-degraded-btns">
+          <button type="button" class="btn btn-outline btn-sm" data-ack="blink" data-i18n="face_i_blinked">I blinked</button>
+          <button type="button" class="btn btn-outline btn-sm" data-ack="left" data-i18n="face_i_turned_left">Turned left</button>
+          <button type="button" class="btn btn-outline btn-sm" data-ack="right" data-i18n="face_i_turned_right">Turned right</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/face.js' %}"></script>
+<script src="{% static 'js/auth.js' %}"></script>
+{% endblock %}

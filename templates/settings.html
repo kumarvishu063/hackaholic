@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Settings | JanSetu{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+  {% include "partials/sidebar.html" %}
+  <div class="app-main">
+    {% include "partials/app-topbar.html" with page_title="Settings" page_title_key="settings" %}
+
+    <main class="app-content settings-content">
+      <section class="card">
+        <div class="card-head"><h2 data-i18n="appearance">Appearance</h2></div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <strong data-i18n="theme_mode">Theme</strong>
+            <p class="muted" data-i18n="theme_hint">Switch between light and dark mode.</p>
+          </div>
+          <div class="theme-picker">
+            <button type="button" class="theme-option" data-theme-option="light">
+              <svg class="icon"><use href="{% static 'icons.svg' %}#icon-sun"/></svg>
+              <span data-i18n="light">Light</span>
+            </button>
+            <button type="button" class="theme-option" data-theme-option="dark">
+              <svg class="icon"><use href="{% static 'icons.svg' %}#icon-moon"/></svg>
+              <span data-i18n="dark">Dark</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2 data-i18n="language">Language</h2></div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <strong data-i18n="ui_language">Interface language</strong>
+            <p class="muted" data-i18n="language_hint">Translates the entire interface instantly.</p>
+          </div>
+          <select id="settings-lang" class="settings-select">
+            <option value="en">English</option>
+            <option value="hi">हिंदी</option>
+            <option value="mr">मराठी</option>
+            <option value="kn">ಕನ್ನಡ</option>
+            <option value="bn">বাংলা</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2 data-i18n="account">Account</h2></div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <strong data-i18n="signed_in_as">Signed in as</strong>
+            <p class="muted" id="settings-account">—</p>
+          </div>
+          <span class="badge badge-info" id="settings-role">—</span>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <strong data-i18n="logout">Logout</strong>
+            <p class="muted" data-i18n="logout_hint">End your session on this device.</p>
+          </div>
+          <button type="button" class="btn btn-danger-ghost" id="settings-logout" data-i18n="logout">Logout</button>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/settings.js' %}"></script>
+{% endblock %}

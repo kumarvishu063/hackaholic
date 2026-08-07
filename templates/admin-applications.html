@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Applications | JanSetu Admin{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+  {% include "partials/sidebar.html" with role="super_admin" %}
+  <div class="app-main">
+    {% include "partials/app-topbar.html" with page_title="Applications" page_title_key="admin_applications" %}
+
+    <main class="app-content">
+      <section class="card">
+        <div class="card-head wrap">
+          <h2 data-i18n="approval_applications">Approval Applications</h2>
+          <div class="toolbar">
+            <div class="search-box">
+              <svg class="icon"><use href="{% static 'icons.svg' %}#icon-search"/></svg>
+              <input type="search" id="search-input" placeholder="Search applicants…" aria-label="Search" data-i18n-placeholder="search_applicants">
+            </div>
+            <select id="role-filter" aria-label="Role">
+              <option value="" data-i18n="all_roles">All roles</option>
+              <option value="validator" data-i18n="role_validator">Validator</option>
+              <option value="official" data-i18n="role_official">Official</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="tabs" id="status-tabs">
+          <button class="tab-btn active" data-status="PENDING" data-i18n="pending">Pending</button>
+          <button class="tab-btn" data-status="APPROVED" data-i18n="approved">Approved</button>
+          <button class="tab-btn" data-status="REJECTED" data-i18n="rejected">Rejected</button>
+          <button class="tab-btn" data-status="" data-i18n="all_applications">All</button>
+        </div>
+
+        <div class="app-grid" id="apps-grid">
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+        </div>
+        <div class="empty-state hidden" id="empty-state">
+          <svg class="icon icon-xl"><use href="{% static 'icons.svg' %}#icon-doc"/></svg>
+          <p data-i18n="no_applications">No applications found.</p>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- Application detail modal -->
+<div class="modal hidden" id="detail-modal" role="dialog" aria-modal="true">
+  <div class="modal-overlay"></div>
+  <div class="modal-card modal-lg">
+    <button class="modal-close" data-close-modal aria-label="Close">
+      <svg class="icon"><use href="{% static 'icons.svg' %}#icon-x"/></svg>
+    </button>
+    <div class="modal-head">
+      <h3 data-i18n="view_complete_details">View Complete Details</h3>
+      <span class="chip" id="detail-status"></span>
+    </div>
+    <div id="detail-body" class="modal-body"></div>
+    <div class="modal-foot" id="detail-actions"></div>
+  </div>
+</div>
+
+<!-- Reject modal -->
+<div class="modal hidden" id="reject-modal" role="dialog" aria-modal="true">
+  <div class="modal-overlay"></div>
+  <div class="modal-card modal-sm">
+    <button class="modal-close" data-close-modal aria-label="Close">
+      <svg class="icon"><use href="{% static 'icons.svg' %}#icon-x"/></svg>
+    </button>
+    <div class="modal-head"><h3 data-i18n="reject_application">Reject Application</h3></div>
+    <div class="modal-body">
+      <p class="muted small" data-i18n="reject_reason_hint">Provide a reason for the applicant.</p>
+      <textarea id="reject-remarks" rows="4" placeholder="Reason for rejection (required)…" data-i18n-placeholder="rejection_reason_ph"></textarea>
+      <p class="field-error" id="reject-error"></p>
+    </div>
+    <div class="modal-foot" style="display:flex;gap:10px;">
+      <button class="btn btn-ghost grow" data-close-modal data-i18n="cancel">Cancel</button>
+      <button class="btn btn-danger-ghost" id="reject-confirm-btn" data-i18n="reject_with_reason">Reject</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/admin-applications.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Audit Log | JanSetu Admin{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+  {% include "partials/sidebar.html" with role="super_admin" %}
+  <div class="app-main">
+    {% include "partials/app-topbar.html" with page_title="Audit Log" page_title_key="admin_audit" %}
+
+    <main class="app-content">
+      <section class="card">
+        <div class="card-head wrap">
+          <h2 data-i18n="audit_trail">Audit Trail</h2>
+          <div class="toolbar">
+            <div class="search-box">
+              <svg class="icon"><use href="{% static 'icons.svg' %}#icon-search"/></svg>
+              <input type="search" id="search-input" placeholder="Search by admin or email…" aria-label="Search" data-i18n-placeholder="search_users">
+            </div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th data-i18n="login_attempt">Action</th>
+                <th data-i18n="applicant_email">Admin</th>
+                <th data-i18n="target">Target</th>
+                <th data-i18n="details">Details</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody id="audit-body">
+              <tr><td colspan="5"><div class="skeleton-card"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="empty-state hidden" id="empty-state">
+          <svg class="icon icon-xl"><use href="{% static 'icons.svg' %}#icon-shield"/></svg>
+          <p data-i18n="no_audit_logs">No audit log entries.</p>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </section>
+    </main>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/admin-audit.js' %}"></script>
+{% endblock %}

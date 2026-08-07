@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Validator Dashboard | JanSetu{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+  {% include "partials/sidebar.html" with role="validator" %}
+  <div class="app-main">
+    {% include "partials/app-topbar.html" with page_title="Validator Dashboard" page_title_key="validator_dashboard" %}
+
+    <main class="app-content">
+
+      <!-- ============================ STATS ============================ -->
+      <section class="stats-row" aria-label="Workload statistics">
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-clock"/></svg></div>
+          <div><strong id="stat-pending">0</strong><span data-i18n="pending">Pending Validation</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-check-circle"/></svg></div>
+          <div><strong id="stat-verified">0</strong><span data-i18n="verified">Verified</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-x-circle"/></svg></div>
+          <div><strong id="stat-rejected">0</strong><span data-i18n="rejected">Rejected</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-flag"/></svg></div>
+          <div><strong id="stat-avg">0</strong><span data-i18n="avg_urgency">Avg. Urgency</span></div>
+        </div>
+      </section>
+
+      <!-- ===================== PENDING COMPLAINTS ===================== -->
+      <section class="card" id="pending-list">
+        <div class="card-head wrap">
+          <h2 data-i18n="pending_validation">Pending Validation</h2>
+          <div class="toolbar">
+            <div class="search-box">
+              <svg class="icon"><use href="{% static 'icons.svg' %}#icon-search"/></svg>
+              <input type="search" id="search-input" placeholder="Search…" aria-label="Search complaints" data-i18n-placeholder="search">
+            </div>
+            <select id="category-filter" aria-label="Filter by category">
+              <option value="" data-i18n="all_categories">All categories</option>
+              <option value="Roads & Transport" data-i18n="cat_roads">Roads &amp; Transport</option>
+              <option value="Water Supply" data-i18n="cat_water">Water Supply</option>
+              <option value="Electricity" data-i18n="cat_electricity">Electricity</option>
+              <option value="Sanitation & Garbage" data-i18n="cat_sanitation">Sanitation &amp; Garbage</option>
+              <option value="Public Health" data-i18n="cat_health">Public Health</option>
+              <option value="Education" data-i18n="cat_education">Education</option>
+              <option value="Police & Safety" data-i18n="cat_police">Police &amp; Safety</option>
+              <option value="Environment" data-i18n="cat_environment">Environment</option>
+              <option value="Other" data-i18n="cat_other">Other</option>
+            </select>
+            <select id="urgency-filter" aria-label="Filter by minimum urgency">
+              <option value="" data-i18n="all_urgency">Any urgency</option>
+              <option value="7">7+ (High)</option>
+              <option value="5">5+ (Medium)</option>
+              <option value="1">1+ (All)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="review-list" id="review-list">
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+        </div>
+        <div class="empty-state hidden" id="empty-state">
+          <svg class="icon icon-xl"><use href="{% static 'icons.svg' %}#icon-check-circle"/></svg>
+          <p data-i18n="no_pending">No complaints awaiting validation. Great work!</p>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </section>
+    </main>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/validator.js' %}"></script>
+{% endblock %}

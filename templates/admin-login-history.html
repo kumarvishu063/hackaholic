@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Login History | JanSetu Admin{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+  {% include "partials/sidebar.html" with role="super_admin" %}
+  <div class="app-main">
+    {% include "partials/app-topbar.html" with page_title="Login History" page_title_key="admin_login_history" %}
+
+    <main class="app-content">
+      <section class="card">
+        <div class="card-head wrap">
+          <h2 data-i18n="login_history">Login History</h2>
+          <div class="toolbar">
+            <div class="search-box">
+              <svg class="icon"><use href="{% static 'icons.svg' %}#icon-search"/></svg>
+              <input type="search" id="search-input" placeholder="Search by email…" aria-label="Search" data-i18n-placeholder="search_users">
+            </div>
+            <select id="result-filter" aria-label="Result">
+              <option value="" data-i18n="all_statuses">All results</option>
+              <option value="true" data-i18n="success">Success</option>
+              <option value="false" data-i18n="failed">Failed</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th data-i18n="applicant_email">Email</th>
+                <th data-i18n="method">Method</th>
+                <th data-i18n="login_attempt">Result</th>
+                <th data-i18n="ip_address">IP Address</th>
+                <th data-i18n="user_agent">User Agent</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody id="history-body">
+              <tr><td colspan="6"><div class="skeleton-card"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="empty-state hidden" id="empty-state">
+          <svg class="icon icon-xl"><use href="{% static 'icons.svg' %}#icon-clock"/></svg>
+          <p data-i18n="no_login_history">No login records.</p>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </section>
+    </main>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/admin-login-history.js' %}"></script>
+{% endblock %}

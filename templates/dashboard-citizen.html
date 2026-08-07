@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Citizen Dashboard | JanSetu{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+  {% include "partials/sidebar.html" with role="citizen" %}
+  <div class="app-main">
+    {% include "partials/app-topbar.html" with page_title="Citizen Dashboard" page_title_key="citizen_dashboard" %}
+
+    <main class="app-content">
+
+      <!-- ============================ STATS ============================ -->
+      <section class="stats-row" id="stats-row" aria-label="Your statistics">
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-clipboard"/></svg></div>
+          <div><strong id="stat-total">0</strong><span data-i18n="total_complaints">Total Complaints</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-clock"/></svg></div>
+          <div><strong id="stat-pending">0</strong><span data-i18n="pending">Pending Validation</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-check-circle"/></svg></div>
+          <div><strong id="stat-verified">0</strong><span data-i18n="verified">Verified</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-flag"/></svg></div>
+          <div><strong id="stat-resolved">0</strong><span data-i18n="resolved">Resolved</span></div>
+        </div>
+      </section>
+
+      <!-- ======================== NEW COMPLAINT ======================== -->
+      <section class="card" id="submit-section">
+        <div class="card-head">
+          <h2 data-i18n="new_complaint">New Complaint</h2>
+          <span class="badge badge-info">
+            <svg class="icon"><use href="{% static 'icons.svg' %}#icon-spark"/></svg>
+            <span data-i18n="ai_powered">AI Powered</span>
+          </span>
+        </div>
+
+        <form id="complaint-form" novalidate>
+          <div class="grid-2">
+            <div class="field">
+              <label for="category" data-i18n="category">Category</label>
+              <select id="category" name="category" required>
+                <option value="" disabled selected data-i18n="select_category">Select a category…</option>
+                <option value="Roads & Transport" data-i18n="cat_roads">Roads &amp; Transport</option>
+                <option value="Water Supply" data-i18n="cat_water">Water Supply</option>
+                <option value="Electricity" data-i18n="cat_electricity">Electricity</option>
+                <option value="Sanitation & Garbage" data-i18n="cat_sanitation">Sanitation &amp; Garbage</option>
+                <option value="Public Health" data-i18n="cat_health">Public Health</option>
+                <option value="Education" data-i18n="cat_education">Education</option>
+                <option value="Police & Safety" data-i18n="cat_police">Police &amp; Safety</option>
+                <option value="Environment" data-i18n="cat_environment">Environment</option>
+                <option value="Other" data-i18n="cat_other">Other</option>
+              </select>
+              <p class="field-error" data-error-for="category"></p>
+            </div>
+
+            <div class="field">
+              <label for="address" data-i18n="location">Location / Address</label>
+              <div class="input-wrap">
+                <svg class="icon"><use href="{% static 'icons.svg' %}#icon-map-pin"/></svg>
+                <input type="text" id="address" name="address" placeholder="Street, area, city" data-i18n-placeholder="address_placeholder">
+                <button type="button" class="input-action" id="locate-btn" title="Detect my location" aria-label="Detect my location">
+                  <svg class="icon"><use href="{% static 'icons.svg' %}#icon-crosshair"/></svg>
+                </button>
+              </div>
+              <p class="hint" id="gps-hint"></p>
+              <input type="hidden" id="latitude" name="latitude">
+              <input type="hidden" id="longitude" name="longitude">
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="description" data-i18n="description">Describe the issue</label>
+            <textarea id="description" name="description" rows="4" maxlength="5000"
+                      placeholder="Tell us what happened, since when, and where exactly…" data-i18n-placeholder="description_placeholder"></textarea>
+            <p class="field-error" data-error-for="description"></p>
+          </div>
+
+          <div class="media-row">
+            <div class="media-tile">
+              <button type="button" class="media-btn" id="record-btn" aria-label="Record audio">
+                <svg class="icon"><use href="{% static 'icons.svg' %}#icon-mic"/></svg>
+              </button>
+              <div class="media-tile-label">
+                <span data-i18n="record_audio">Record Audio</span>
+                <span class="record-timer hidden" id="record-timer">00:00</span>
+                <audio id="audio-preview" controls hidden></audio>
+              </div>
+            </div>
+
+            <div class="media-tile">
+              <button type="button" class="media-btn" id="photo-btn" aria-label="Capture photo">
+                <svg class="icon"><use href="{% static 'icons.svg' %}#icon-camera"/></svg>
+              </button>
+              <div class="media-tile-label">
+                <span data-i18n="capture_photo">Capture Photo</span>
+                <span class="photo-name" id="photo-name"></span>
+                <img id="photo-preview" class="photo-preview hidden" alt="Captured photo evidence">
+              </div>
+              <input type="file" id="photo-file" accept="image/*" hidden>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-lg" id="submit-btn">
+              <svg class="icon"><use href="{% static 'icons.svg' %}#icon-send"/></svg>
+              <span data-i18n="submit">Submit Complaint</span>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ======================= MY COMPLAINTS ======================= -->
+      <section class="card" id="my-complaints">
+        <div class="card-head wrap">
+          <h2 data-i18n="my_complaints">My Complaints</h2>
+          <div class="toolbar">
+            <div class="search-box">
+              <svg class="icon"><use href="{% static 'icons.svg' %}#icon-search"/></svg>
+              <input type="search" id="search-input" placeholder="Search…" aria-label="Search complaints" data-i18n-placeholder="search">
+            </div>
+            <select id="status-filter" aria-label="Filter by status">
+              <option value="" data-i18n="all_statuses">All statuses</option>
+              <option value="PENDING_VALIDATION" data-i18n="pending">Pending Validation</option>
+              <option value="VERIFIED" data-i18n="verified">Verified</option>
+              <option value="RESOLVED" data-i18n="resolved">Resolved</option>
+              <option value="REJECTED" data-i18n="rejected">Rejected</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="complaint-list" id="complaints-list">
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+        </div>
+        <div class="empty-state hidden" id="empty-state">
+          <svg class="icon icon-xl"><use href="{% static 'icons.svg' %}#icon-clipboard"/></svg>
+          <p data-i18n="no_complaints_yet">You haven't submitted any complaints yet.</p>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- ======================= CAMERA MODAL ======================= -->
+<div class="modal hidden" id="camera-modal" role="dialog" aria-modal="true">
+  <div class="modal-card modal-camera">
+    <div class="modal-head">
+      <h3 data-i18n="capture_photo">Capture Photo</h3>
+      <button type="button" class="icon-btn" data-close-modal aria-label="Close">
+        <svg class="icon"><use href="{% static 'icons.svg' %}#icon-x"/></svg>
+      </button>
+    </div>
+    <div class="camera-stage">
+      <video id="camera-preview" autoplay playsinline muted></video>
+      <canvas id="camera-canvas" hidden></canvas>
+      <button type="button" class="btn btn-primary camera-shoot" id="camera-shoot">
+        <svg class="icon"><use href="{% static 'icons.svg' %}#icon-camera"/></svg>
+        <span data-i18n="snapshot">Capture</span>
+      </button>
+    </div>
+    <p class="hint center" data-i18n="camera_hint">Or use the upload button instead.</p>
+  </div>
+</div>
+
+<!-- ======================= RESULT MODAL ======================= -->
+<div class="modal hidden" id="result-modal" role="dialog" aria-modal="true">
+  <div class="modal-card modal-result">
+    <div class="result-success">
+      <svg class="icon icon-success icon-xl"><use href="{% static 'icons.svg' %}#icon-check-circle"/></svg>
+      <h3 data-i18n="complaint_submitted">Complaint Submitted Successfully!</h3>
+      <p data-i18n="result_sub">AI has processed your complaint. Keep these details safe:</p>
+    </div>
+    <div class="result-grid">
+      <div class="result-item">
+        <span data-i18n="complaint_id">Complaint ID</span>
+        <strong id="result-id">—</strong>
+        <button type="button" class="copy-btn" data-copy="#result-id" data-i18n="copy">Copy</button>
+      </div>
+      <div class="result-item">
+        <span data-i18n="complaint_pin">Complaint PIN</span>
+        <strong id="result-pin">—</strong>
+        <button type="button" class="copy-btn" data-copy="#result-pin" data-i18n="copy">Copy</button>
+      </div>
+      <div class="result-item result-item-wide">
+        <span data-i18n="sha256_hash">SHA-256 Hash</span>
+        <strong id="result-hash" class="hash-text">—</strong>
+        <button type="button" class="copy-btn" data-copy="#result-hash" data-i18n="copy">Copy</button>
+      </div>
+    </div>
+    <div class="form-actions">
+      <a href="#" class="btn btn-primary" id="result-track" data-i18n="track">Track This Complaint</a>
+      <button type="button" class="btn btn-ghost" id="result-another" data-i18n="submit_another">Submit Another</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/citizen.js' %}"></script>
+{% endblock %}

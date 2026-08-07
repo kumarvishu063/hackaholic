@@ -1,0 +1,40 @@
+{% load static %}
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="icon-btn sidebar-open" id="sidebar-open" aria-label="Open menu">
+      <svg class="icon"><use href="{% static 'icons.svg' %}#icon-menu"/></svg>
+    </button>
+    <h1 class="page-title" data-i18n="{{ page_title_key }}">{{ page_title }}</h1>
+  </div>
+
+  <div class="topbar-right">
+    <label class="lang-switcher" title="Language">
+      <svg class="icon"><use href="{% static 'icons.svg' %}#icon-globe"/></svg>
+      <select id="lang-select" aria-label="Language"></select>
+    </label>
+    <button class="icon-btn" id="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon"><use href="{% static 'icons.svg' %}#icon-sun"/></svg>
+    </button>
+    <!-- Notifications -->
+    <div class="notif-wrap" id="notif-wrap">
+      <button class="icon-btn notif-btn" id="notif-btn" title="Notifications" aria-label="Notifications">
+        <svg class="icon"><use href="{% static 'icons.svg' %}#icon-bell"/></svg>
+        <span class="notif-badge hidden" id="notif-badge">0</span>
+      </button>
+      <div class="notif-dropdown hidden" id="notif-dropdown">
+        <div class="notif-head">
+          <span data-i18n="notifications">Notifications</span>
+          <button id="notif-mark-read" data-i18n="mark_all_read">Mark all read</button>
+        </div>
+        <div class="notif-list" id="notif-list"><div class="notif-empty" data-i18n="loading">Loading…</div></div>
+      </div>
+    </div>
+    <a href="/profile/" class="user-chip" id="user-chip">
+      <span class="avatar" id="user-avatar">?</span>
+      <span class="user-chip-meta">
+        <strong id="user-name">—</strong>
+        <small id="user-role">Citizen</small>
+      </span>
+    </a>
+  </div>
+</header>

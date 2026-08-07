@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Complaints | JanSetu Admin{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+  {% include "partials/sidebar.html" with role="super_admin" %}
+  <div class="app-main">
+    {% include "partials/app-topbar.html" with page_title="Complaint Registry" page_title_key="complaint_registry" %}
+
+    <main class="app-content">
+      <section class="card">
+        <div class="card-head wrap">
+          <h2 data-i18n="complaint_registry">Complaint Registry</h2>
+          <div class="toolbar">
+            <div class="search-box">
+              <svg class="icon"><use href="{% static 'icons.svg' %}#icon-search"/></svg>
+              <input type="search" id="search-input" placeholder="Search…" aria-label="Search" data-i18n-placeholder="search">
+            </div>
+            <select id="status-filter" aria-label="Status">
+              <option value="" data-i18n="all_statuses">All statuses</option>
+              <option value="PENDING_VALIDATION" data-i18n="pending">Pending Validation</option>
+              <option value="VERIFIED" data-i18n="verified">Verified</option>
+              <option value="RESOLVED" data-i18n="resolved">Resolved</option>
+              <option value="REJECTED" data-i18n="rejected">Rejected</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th data-i18n="complaint_id">Complaint ID</th>
+                <th data-i18n="category">Category</th>
+                <th data-i18n="submitted_by">Submitted by</th>
+                <th data-i18n="status">Status</th>
+                <th data-i18n="urgency">Urgency</th>
+                <th data-i18n="submitted_on">Submitted On</th>
+                <th data-i18n="actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="complaints-body">
+              <tr><td colspan="7"><div class="skeleton-card"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="empty-state hidden" id="empty-state">
+          <svg class="icon icon-xl"><use href="{% static 'icons.svg' %}#icon-clipboard"/></svg>
+          <p data-i18n="no_complaints">No complaints found.</p>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- Complaint detail modal -->
+<div class="modal hidden" id="complaint-modal" role="dialog" aria-modal="true">
+  <div class="modal-overlay"></div>
+  <div class="modal-card modal-lg">
+    <button class="modal-close" data-close-modal aria-label="Close">
+      <svg class="icon"><use href="{% static 'icons.svg' %}#icon-x"/></svg>
+    </button>
+    <div class="modal-head"><h3 data-i18n="view_complaint">View complaint</h3></div>
+    <div id="complaint-body" class="modal-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-block" data-close-modal data-i18n="ok">OK</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/admin-complaints.js' %}"></script>
+{% endblock %}

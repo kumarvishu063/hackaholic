@@ -1,0 +1,49 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}JanSetu — AI-Powered Grievance Management{% endblock %}</title>
+  <meta name="description" content="JanSetu is an AI-powered citizen grievance management system. Register, record and track complaints with voice, photos and GPS.">
+  <link rel="icon" type="image/png" href="{% static 'logo.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'logo.png' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="stylesheet" href="{% static 'css/features.css' %}">
+  <link rel="stylesheet" href="{% static 'css/chatbot.css' %}">
+  <script>
+    // Apply the saved theme before first paint to avoid a flash of the wrong theme.
+    (function () {
+      try {
+        var t = localStorage.getItem('jst_theme') || 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body class="{% block body_class %}{% endblock %}">
+
+  {% block body %}{% endblock %}
+
+  <!-- JanSetu Assistant (floating chatbot) -->
+  {% include "partials/chatbot.html" %}
+
+  <!-- Global overlays -->
+  <div id="toast-container" aria-live="polite"></div>
+  <div id="loading-overlay" class="loading-overlay hidden" aria-hidden="true">
+    <div class="spinner spinner-lg"></div>
+    <p data-i18n="loading">Loading…</p>
+  </div>
+
+  <!-- Shared scripts -->
+  <script src="{% static 'js/api.js' %}"></script>
+  <script src="{% static 'js/ui.js' %}"></script>
+  <script src="{% static 'js/i18n.js' %}"></script>
+  <script src="{% static 'js/theme.js' %}"></script>
+  <script src="{% static 'js/common.js' %}"></script>
+  <script src="{% static 'js/chatbot.js' %}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

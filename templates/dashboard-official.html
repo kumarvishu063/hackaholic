@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Official Dashboard | JanSetu{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+  {% include "partials/sidebar.html" with role="official" %}
+  <div class="app-main">
+    {% include "partials/app-topbar.html" with page_title="Official Dashboard" page_title_key="official_dashboard" %}
+
+    <main class="app-content">
+
+      <!-- ============================ STATS ============================ -->
+      <section class="stats-row" aria-label="Overview statistics">
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-clipboard"/></svg></div>
+          <div><strong id="stat-total">0</strong><span data-i18n="total_complaints">Total Complaints</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-check-circle"/></svg></div>
+          <div><strong id="stat-verified">0</strong><span data-i18n="verified">Verified</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-flag"/></svg></div>
+          <div><strong id="stat-resolved">0</strong><span data-i18n="resolved">Resolved</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-x-circle"/></svg></div>
+          <div><strong id="stat-rejected">0</strong><span data-i18n="rejected">Rejected</span></div>
+        </div>
+      </section>
+
+      <!-- ===================== COMPLAINT REGISTRY ===================== -->
+      <section class="card" id="complaint-list">
+        <div class="card-head wrap">
+          <h2 data-i18n="complaints">Complaints Registry</h2>
+        </div>
+
+        <div class="filter-bar" id="filter-bar">
+          <div class="search-box grow">
+            <svg class="icon"><use href="{% static 'icons.svg' %}#icon-search"/></svg>
+            <input type="search" id="search-input" placeholder="Search by ID, description, address…" aria-label="Search complaints" data-i18n-placeholder="search">
+          </div>
+          <select id="status-filter" aria-label="Filter by status">
+            <option value="" data-i18n="all_statuses">All statuses</option>
+            <option value="VERIFIED" data-i18n="verified">Verified</option>
+            <option value="RESOLVED" data-i18n="resolved">Resolved</option>
+            <option value="REJECTED" data-i18n="rejected">Rejected</option>
+          </select>
+          <select id="category-filter" aria-label="Filter by category">
+            <option value="" data-i18n="all_categories">All categories</option>
+            <option value="Roads & Transport" data-i18n="cat_roads">Roads &amp; Transport</option>
+            <option value="Water Supply" data-i18n="cat_water">Water Supply</option>
+            <option value="Electricity" data-i18n="cat_electricity">Electricity</option>
+            <option value="Sanitation & Garbage" data-i18n="cat_sanitation">Sanitation &amp; Garbage</option>
+            <option value="Public Health" data-i18n="cat_health">Public Health</option>
+            <option value="Education" data-i18n="cat_education">Education</option>
+            <option value="Police & Safety" data-i18n="cat_police">Police &amp; Safety</option>
+            <option value="Environment" data-i18n="cat_environment">Environment</option>
+            <option value="Other" data-i18n="cat_other">Other</option>
+          </select>
+          <select id="sort-filter" aria-label="Sort complaints">
+            <option value="-created_at" data-i18n="sort_newest">Newest first</option>
+            <option value="created_at" data-i18n="sort_oldest">Oldest first</option>
+            <option value="-urgency_score" data-i18n="sort_urgency">Highest urgency</option>
+            <option value="urgency_score" data-i18n="sort_urgency_low">Lowest urgency</option>
+            <option value="status" data-i18n="sort_status">By status</option>
+          </select>
+          <input type="date" id="date-from" aria-label="From date">
+          <input type="date" id="date-to" aria-label="To date">
+        </div>
+
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th data-i18n="complaint_id">Complaint ID</th>
+                <th data-i18n="category">Category</th>
+                <th data-i18n="status">Status</th>
+                <th data-i18n="urgency">Urgency</th>
+                <th data-i18n="location">Location</th>
+                <th data-i18n="submitted_on">Submitted On</th>
+                <th data-i18n="actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="official-table-body"></tbody>
+          </table>
+        </div>
+        <div class="empty-state hidden" id="empty-state">
+          <svg class="icon icon-xl"><use href="{% static 'icons.svg' %}#icon-clipboard"/></svg>
+          <p data-i18n="no_complaints_found">No complaints match your filters.</p>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </section>
+    </main>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/official.js' %}"></script>
+{% endblock %}

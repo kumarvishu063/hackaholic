@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Complaint Details | JanSetu{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+  {% include "partials/sidebar.html" %}
+  <div class="app-main">
+    {% include "partials/app-topbar.html" with page_title="Complaint Details" page_title_key="complaint_details" %}
+
+    <main class="app-content detail-content" id="detail-root">
+      <!-- Filled by details.js -->
+      <div class="skeleton-card detail-skeleton"></div>
+      <div class="skeleton-card detail-skeleton"></div>
+    </main>
+  </div>
+</div>
+
+<!-- ================== ACTION MODALS ================== -->
+<div class="modal hidden" id="action-modal" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 id="action-modal-title" data-i18n="add_remarks">Add Remarks</h3>
+      <button type="button" class="icon-btn" data-close-modal aria-label="Close">
+        <svg class="icon"><use href="{% static 'icons.svg' %}#icon-x"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <textarea id="action-remarks" rows="4" maxlength="2000"
+                placeholder="Add your remarks here…" data-i18n-placeholder="remarks_placeholder"></textarea>
+      <p class="hint" id="action-hint"></p>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" data-close-modal data-i18n="cancel">Cancel</button>
+        <button type="button" class="btn btn-primary" id="action-confirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/details.js' %}"></script>
+{% endblock %}

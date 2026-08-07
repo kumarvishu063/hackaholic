@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Reports | JanSetu Admin{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+  {% include "partials/sidebar.html" with role="super_admin" %}
+  <div class="app-main">
+    {% include "partials/app-topbar.html" with page_title="Reports" page_title_key="admin_reports" %}
+
+    <main class="app-content">
+      <!-- Summary -->
+      <section class="stats-row" aria-label="Report summary">
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-user"/></svg></div>
+          <div><strong id="report-users">0</strong><span data-i18n="total_users">Total Users</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-clipboard"/></svg></div>
+          <div><strong id="report-complaints">0</strong><span data-i18n="total_complaints_count">Total Complaints</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-check-circle"/></svg></div>
+          <div><strong id="report-resolved">0</strong><span data-i18n="resolved">Resolved</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg class="icon"><use href="{% static 'icons.svg' %}#icon-clock"/></svg></div>
+          <div><strong id="report-pending">0</strong><span data-i18n="pending">Pending</span></div>
+        </div>
+      </section>
+
+      <section class="admin-hero">
+        <div class="card">
+          <div class="card-head"><h2 data-i18n="complaints_by_status">Complaints by Status</h2></div>
+          <div id="by-status" class="chart-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2 data-i18n="complaints_by_category">Complaints by Category</h2></div>
+          <div id="by-category" class="chart-list"></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2 data-i18n="users_by_role">Users by Role</h2></div>
+        <div id="by-role" class="chart-list"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2 data-i18n="signup_trend">Signups (last 14 days)</h2></div>
+        <div id="trend" class="trend-chart"></div>
+      </section>
+
+      <p class="muted small" id="generated-at"></p>
+    </main>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/admin-reports.js' %}"></script>
+{% endblock %}

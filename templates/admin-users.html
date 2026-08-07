@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Users | JanSetu Admin{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+  {% include "partials/sidebar.html" with role="super_admin" %}
+  <div class="app-main">
+    {% include "partials/app-topbar.html" with page_title="Users" page_title_key="admin_users" %}
+
+    <main class="app-content">
+      <section class="card">
+        <div class="card-head wrap">
+          <h2 data-i18n="manage_users">Manage Users</h2>
+          <div class="toolbar">
+            <div class="search-box">
+              <svg class="icon"><use href="{% static 'icons.svg' %}#icon-search"/></svg>
+              <input type="search" id="search-input" placeholder="Search users…" aria-label="Search" data-i18n-placeholder="search_users">
+            </div>
+            <select id="role-filter" aria-label="Role">
+              <option value="" data-i18n="all_roles">All roles</option>
+              <option value="citizen" data-i18n="role_citizen">Citizen</option>
+              <option value="validator" data-i18n="role_validator">Validator</option>
+              <option value="official" data-i18n="role_official">Official</option>
+              <option value="super_admin" data-i18n="role_super_admin">Super Admin</option>
+            </select>
+            <select id="status-filter" aria-label="Status">
+              <option value="" data-i18n="all_statuses">All statuses</option>
+              <option value="PENDING" data-i18n="pending">Pending</option>
+              <option value="APPROVED" data-i18n="approved">Approved</option>
+              <option value="ACTIVE" data-i18n="active">Active</option>
+              <option value="REJECTED" data-i18n="rejected">Rejected</option>
+              <option value="SUSPENDED" data-i18n="suspended">Suspended</option>
+              <option value="DEACTIVATED" data-i18n="deactivated">Deactivated</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th data-i18n="applicant_name">Applicant Name</th>
+                <th data-i18n="email">Email</th>
+                <th data-i18n="user_role">Role</th>
+                <th data-i18n="account_status">Status</th>
+                <th data-i18n="face_status">Face</th>
+                <th data-i18n="actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="users-body">
+              <tr><td colspan="6"><div class="skeleton-card"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="empty-state hidden" id="empty-state">
+          <svg class="icon icon-xl"><use href="{% static 'icons.svg' %}#icon-user"/></svg>
+          <p data-i18n="no_users">No users found.</p>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- Reset password modal -->
+<div class="modal hidden" id="reset-pw-modal" role="dialog" aria-modal="true">
+  <div class="modal-overlay"></div>
+  <div class="modal-card modal-sm">
+    <button class="modal-close" data-close-modal aria-label="Close">
+      <svg class="icon"><use href="{% static 'icons.svg' %}#icon-x"/></svg>
+    </button>
+    <div class="modal-head"><h3 data-i18n="reset_password">Reset Password</h3></div>
+    <div class="modal-body">
+      <p class="muted small" data-i18n="enter_temp_password">Enter a temporary password (min 8 chars).</p>
+      <div class="field">
+        <input type="password" id="temp-password" placeholder="Temporary password">
+        <p class="field-error" id="pw-error"></p>
+      </div>
+    </div>
+    <div class="modal-foot" style="display:flex;gap:10px;">
+      <button class="btn btn-ghost grow" data-close-modal data-i18n="cancel">Cancel</button>
+      <button class="btn btn-primary" id="reset-pw-confirm" data-i18n="reset_password">Reset Password</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/admin-users.js' %}"></script>
+{% endblock %}

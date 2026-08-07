@@ -31,7 +31,8 @@ const Api = (() => {
     const tokens = getTokens();
     const headers = {};
     if (body && !isForm) headers["Content-Type"] = "application/json";
-    if (tokens && tokens.access_token) headers["Authorization"] = "Bearer " + tokens.access_token;
+    const isPublicAuth = path.startsWith("/auth/login") || path.startsWith("/auth/register") || path.startsWith("/auth/refresh");
+    if (tokens && tokens.access_token && !isPublicAuth) headers["Authorization"] = "Bearer " + tokens.access_token;
 
     const opts = { method, headers };
     if (body) opts.body = isForm ? body : JSON.stringify(body);

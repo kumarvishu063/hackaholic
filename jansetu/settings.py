@@ -8,6 +8,7 @@ JWT authentication.
 """
 
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -90,30 +91,57 @@ DATABASES = {
 # MongoDB connection string. Works with:
 #   • MongoDB Atlas:  mongodb+srv://<user>:<pass>@cluster0.xxxx.mongodb.net/jansetu
 #   • Local MongoDB:  mongodb://localhost:27017/jansetu
-#   • In-memory dev:  mongomock://localhost/jansetu_test   (see requirements-dev.txt)
-MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017/jansetu")
+#   • In-memory dev:  mongomock://localhost/jansetu_dev
+# Automated tests always run against the isolated in-memory engine, so a real
+# `.env` URI (e.g. a production Atlas cluster) is never touched or polluted.
+if "test" in sys.argv:
+    os.environ["MONGODB_URI"] = "mongomock://localhost/jansetu_test"
 
-# Connect lazily-ish: MongoEngine connects on first query, but registering the
-# alias here keeps every Document in the app on the same connection.
-if MONGODB_URI.startswith("mongomock://"):
-    # In-memory MongoDB (tests / demo without a real server). Requires the
-    # `mongomock` package from requirements-dev.txt.
-    try:
-        import mongomock
-    except ImportError as exc:  # pragma: no cover
-        raise RuntimeError(
-            "MONGODB_URI uses mongomock but mongomock is not installed. "
-            "Run: pip install -r requirements-dev.txt"
-        ) from exc
-    db_name = MONGODB_URI.split("://", 1)[1].split("/", 1)[-1] or "jansetu"
-    mongoengine.connect(
-        db=db_name,
-        alias="default",
-        host="mongodb://localhost",
-        mongo_client_class=mongomock.MongoClient,
-    )
-else:
-    mongoengine.connect(host=MONGODB_URI, alias="default")
+MONGODB_URI = os.getenv("MONGODB_URI", "").strip()
+if not MONGODB_URI:
+    # If no MONGODB_URI is specified in .env or environment, default to mongomock
+    # so the app works out of the box without requiring a local mongod daemon.
+    MONGODB_URI = "mongomock://localhost/jansetu_dev"
+
+
+def _connect_mongo(uri: str):
+    if uri.startswith("mongomock://"):
+        try:
+            import mongomock
+        except ImportError as exc:  # pragma: no cover
+            raise RuntimeError(
+                "MONGODB_URI uses mongomock but mongomock is not installed. "
+                "Run: pip install -r requirements-dev.txt"
+            ) from exc
+        db_name = uri.split("://", 1)[1].split("/", 1)[-1] or "jansetu"
+        return mongoengine.connect(
+            db=db_name,
+            alias="default",
+            host="mongodb://localhost",
+            mongo_client_class=mongomock.MongoClient,
+        )
+    else:
+        kwargs = {"alias": "default", "host": uri}
+        if DEBUG:
+            kwargs["serverSelectionTimeoutMS"] = 2000
+        return mongoengine.connect(**kwargs)
+
+
+try:
+    _connect_mongo(MONGODB_URI)
+    if not MONGODB_URI.startswith("mongomock://") and DEBUG:
+        mongoengine.get_connection("default").admin.command("ping")
+except Exception as exc:
+    if DEBUG and not MONGODB_URI.startswith("mongomock://"):
+        import logging
+        logging.getLogger("jansetu").warning(
+            "Could not connect to MongoDB at %s: %s. Falling back to in-memory mongomock engine.",
+            MONGODB_URI, exc
+        )
+        mongoengine.disconnect_all()
+        _connect_mongo("mongomock://localhost/jansetu_dev")
+    else:
+        raise
 
 # ---------------------------------------------------------------------------
 # Django REST Framework
@@ -177,10 +205,21 @@ MAX_DOC_SIZE = int(os.getenv("MAX_DOC_SIZE", "10")) * 1024 * 1024      # 10 MB
 # ---------------------------------------------------------------------------
 # Face-match threshold: cosine similarity must be >= this value (0.90 = 90%).
 FACE_MATCH_THRESHOLD = float(os.getenv("FACE_MATCH_THRESHOLD", "0.90"))
+# Embedding engine: "opencv" (fast Haar + LBP), "deepface", "face_recognition",
+# "auto" (best installed) or "mock". Loaded once per process and reused.
+FACE_ENGINE = os.getenv("FACE_ENGINE", "opencv")
+# Liveness gate: "relaxed" (blink OR head-turn — fast, spec default) or
+# "strict" (blink AND head-turn both required).
+FACE_LIVENESS_MODE = os.getenv("FACE_LIVENESS_MODE", "relaxed")
 # Minimum frames a live user must provide during verification (anti-spoofing).
-FACE_MIN_SAMPLES = int(os.getenv("FACE_MIN_SAMPLES", "3"))
+# A single high-quality frame is enough in the optimised single-frame flow.
+FACE_MIN_SAMPLES = int(os.getenv("FACE_MIN_SAMPLES", "1"))
 # Minimum client-reported liveness score (0-100) required to pass the check.
 FACE_MIN_LIVENESS = float(os.getenv("FACE_MIN_LIVENESS", "50"))
+# Minimum mean brightness (0-255) for an acceptable verification frame.
+FACE_MIN_BRIGHTNESS = float(os.getenv("FACE_MIN_BRIGHTNESS", "40"))
+# Maximum faces allowed in a verification frame (more → reject).
+FACE_MAX_FACES = int(os.getenv("FACE_MAX_FACES", "1"))
 # Number of face images required during registration.
 FACE_REGISTER_MIN_IMAGES = int(os.getenv("FACE_REGISTER_MIN_IMAGES", "5"))
 # DEV ONLY — when True, face verification skips the embedding comparison and

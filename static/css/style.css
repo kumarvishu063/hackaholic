@@ -771,3 +771,60 @@ audio { width: 100%; height: 36px; margin-top: 6px; }
 }
 
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+
+/* ---------------------------------------------------------------------------
+   14. Citizen feedback card
+--------------------------------------------------------------------------- */
+.detail-aside { display: flex; flex-direction: column; gap: 20px; }
+
+.feedback-skeleton { height: 200px; }
+
+.feedback-note {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 14px 16px; border-radius: var(--radius);
+  background: var(--surface-2); border: 1px dashed var(--border-strong);
+  color: var(--muted); font-size: 13.5px;
+}
+.feedback-note .icon { width: 18px; height: 18px; margin-top: 2px; flex-shrink: 0; }
+.feedback-note p { margin: 0; }
+
+.req { color: var(--danger); font-weight: 700; }
+
+.fb-field { margin-bottom: 16px; }
+
+.star-input { display: flex; gap: 4px; }
+.star-btn {
+  border: none; background: transparent; cursor: pointer;
+  font-size: 28px; line-height: 1; color: var(--border-strong);
+  padding: 0 2px; transition: transform 0.12s ease, color 0.12s ease;
+}
+.star-btn:hover { transform: scale(1.15); color: var(--accent); }
+.star-btn.active { color: var(--accent); }
+
+.fb-questions { display: flex; gap: 24px; }
+.fb-radio {
+  display: inline-flex; align-items: center; gap: 7px;
+  cursor: pointer; font-size: 14px; color: var(--text);
+}
+.fb-radio input { width: 16px; height: 16px; margin: 0; padding: 0; accent-color: var(--primary); cursor: pointer; }
+
+.feedback-success {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--success-soft); color: var(--success);
+  border-radius: 10px; padding: 10px 14px; font-weight: 700; font-size: 13.5px;
+  margin-bottom: 16px;
+}
+.feedback-success .icon { width: 18px; height: 18px; }
+
+.fb-readonly { display: flex; flex-direction: column; gap: 10px; font-size: 13.5px; }
+.fb-detail { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fb-detail .muted { font-size: 12.5px; }
+.fb-stars-read { display: inline-flex; gap: 2px; }
+.star-read { color: var(--border-strong); font-size: 17px; }
+.star-read.on { color: var(--accent); }
+.fb-comment {
+  margin-top: 8px; background: var(--surface-2); border-left: 3px solid var(--primary);
+  border-radius: 8px; padding: 10px 14px;
+}
+.fb-comment strong { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted-2); margin-bottom: 6px; }
+.fb-comment p { margin: 0; font-size: 13.5px; }

@@ -137,6 +137,72 @@ class FaceAuthServiceTests(SimpleTestCase):
         })
         self.assertFalse(bad)
 
+    def test_liveness_relaxed_blink_or_head_turn(self):
+        """Relaxed mode: a single gesture (blink OR head-turn) is enough."""
+        from apps.authentication import face_auth
+        # Blink only
+        ok, _ = face_auth.validate_liveness({
+            "liveness_score": 80, "blink_count": 1, "samples": 2, "head_turn_done": False,
+        })
+        self.assertTrue(ok)
+        # Head-turn only
+        ok, _ = face_auth.validate_liveness({
+            "liveness_score": 80, "blink_count": 0, "samples": 2, "head_turn_done": True,
+        })
+        self.assertTrue(ok)
+        # Neither gesture → rejected even with a high reported score
+        bad, _ = face_auth.validate_liveness({
+            "liveness_score": 90, "blink_count": 0, "samples": 2, "head_turn_done": False,
+        })
+        self.assertFalse(bad)
+
+    def test_liveness_strict_requires_both(self):
+        """Strict mode keeps the original blink AND head-turn requirement."""
+        from apps.authentication import face_auth
+        from django.test import override_settings
+        with override_settings(FACE_LIVENESS_MODE="strict"):
+            ok, _ = face_auth.validate_liveness({
+                "liveness_score": 85, "blink_count": 2, "samples": 6, "head_turn_done": True,
+            })
+            self.assertTrue(ok)
+            # Blink without head-turn fails in strict mode
+            bad, _ = face_auth.validate_liveness({
+                "liveness_score": 85, "blink_count": 2, "samples": 6, "head_turn_done": False,
+            })
+            self.assertFalse(bad)
+
+    def test_analyze_frame_shape(self):
+        """analyze_frame always returns the full result contract."""
+        from apps.authentication import face_auth
+        png = face_auth._png_bytes_from_raw(64, 64, 128)
+        result = face_auth.analyze_frame(png)
+        self.assertIn("ok", result)
+        self.assertIn("faces", result)
+        self.assertIn("error", result)
+        self.assertIn("brightness", result)
+        self.assertIsInstance(result["ok"], bool)
+        self.assertIsInstance(result["faces"], int)
+        # Contract: errored analyses carry a known error code and no embedding;
+        # successful ones always yield an embedding.
+        if result["ok"]:
+            self.assertIsNotNone(result["embedding"])
+        else:
+            self.assertIn(result["error"], ("no_face", "multiple_faces", "low_light", "undecodable"))
+            self.assertIsNone(result["embedding"])
+
+    def test_engine_status_is_resolved(self):
+        from apps.authentication import face_auth
+        self.assertIn(face_auth.engine_status(), ("opencv", "mock", "deepface", "face_recognition"))
+
+    def test_match_reports_dimension_mismatch(self):
+        """A profile created with a different model must not silently pass."""
+        from apps.authentication import face_auth
+        blob = face_auth.encrypt_embedding([0.5] * 10)
+        result = face_auth.match_embeddings(blob, [0.5] * 64)
+        self.assertFalse(result["matched"])
+        self.assertEqual(result["confidence"], 0.0)
+        self.assertIn("re-register", result["reason"].lower())
+
     def test_demo_embedding_stable(self):
         from apps.authentication import face_auth
         a = face_auth.demo_embedding()
@@ -144,3 +210,48 @@ class FaceAuthServiceTests(SimpleTestCase):
         # Fernet ciphertexts differ (timestamp salt) but decrypt to the same vector.
         self.assertEqual(face_auth.decrypt_embedding(a), face_auth.decrypt_embedding(b))
         self.assertIsNotNone(face_auth.decrypt_embedding(a))
+
+
+class AuthEndpointStaleTokenTests(SimpleTestCase):
+    """Ensure login and registration work even when a stale/invalid Authorization header is sent."""
+
+    def setUp(self):
+        from rest_framework.test import APIClient
+        self.client = APIClient()
+
+    def test_login_with_invalid_bearer_token(self):
+        # Create a user
+        email = "stale.test@example.com"
+        User.objects(email=email).delete()
+        user = User(full_name="Stale Test", email=email, role="citizen", account_status="ACTIVE")
+        user.set_password("Password123")
+        user.save()
+
+        try:
+            # Set invalid Authorization header
+            self.client.credentials(HTTP_AUTHORIZATION="Bearer invalid.expired.token")
+            response = self.client.post("/api/auth/login/", {"identifier": email, "password": "Password123"})
+            self.assertEqual(response.status_code, 200)
+            self.assertIn("access_token", response.data)
+        finally:
+            user.delete()
+
+    def test_register_with_invalid_bearer_token(self):
+        email = "stale.reg@example.com"
+        User.objects(email=email).delete()
+
+        try:
+            # Set invalid Authorization header
+            self.client.credentials(HTTP_AUTHORIZATION="Bearer invalid.expired.token")
+            response = self.client.post("/api/auth/register/", {
+                "full_name": "Stale Reg",
+                "email": email,
+                "password": "Password123",
+                "confirm_password": "Password123",
+                "role": "citizen"
+            })
+            self.assertEqual(response.status_code, 201)
+            self.assertIn("access_token", response.data)
+        finally:
+            User.objects(email=email).delete()
+

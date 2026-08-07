@@ -3,21 +3,33 @@ Face registration & verification service.
 
 Pipeline (production mode):
     image ──► face detection (OpenCV Haar cascade)
-          ──► embedding (DeepFace if installed, else OpenCV LBP histogram)
+          ──► embedding (DeepFace / face_recognition / OpenCV LBP histogram)
           ──► encrypted with Fernet ──► stored on the User document
 
 Verification:
-    live frame ──► detect face ──► extract embedding ──► decrypt stored
-          ──► cosine similarity ──► confidence %  (threshold ≥ 90% default)
+    live frame ──► analyze_frame (single decode + detect + lighting + embed)
+          ──► decrypt stored ──► cosine similarity ──► confidence %
+          (threshold ≥ 90% default)
+
+Performance notes (see FACE_AUTH_OPTIMIZATION.txt)
+--------------------------------------------------
+* The heavy models are loaded ONCE per process (module-level cache + thread
+  lock) and reused for every request — never rebuilt per login.
+* `analyze_frame()` performs decode → detect → lighting → embedding in a
+  single pass over the image, so the verify endpoint never decodes or scans
+  the frame twice.
+* The engine is selected from settings.FACE_ENGINE ("opencv" by default,
+  the lightweight Haar + LBP path). DeepFace / face_recognition are used only
+  when explicitly requested and installed.
 
 Security properties
 -------------------
 * Only the *encrypted* embedding is ever persisted — never the raw image or a
   plain-text feature vector. The Fernet key comes from settings
   (FACE_ENCRYPTION_KEY, auto-derived from the Django secret when not set).
-* Liveness is enforced jointly by the client (blink + head-movement checks)
-  and the server (minimum frame count, minimum liveness score, and a face must
-  actually be detected in the submitted frame).
+* Liveness is enforced jointly by the client (blink OR head-turn gesture) and
+  the server (minimum samples, minimum liveness score, and a face must actually
+  be detected in the submitted frame).
 * Every dependency is imported lazily so the app boots even when the optional
   ML packages are missing — in that case a documented mock embedding is used.
 
@@ -29,6 +41,7 @@ import hashlib
 import io
 import logging
 import struct
+import threading
 from typing import Optional
 
 from django.conf import settings
@@ -41,11 +54,13 @@ logger = logging.getLogger(__name__)
 _cv2 = None
 _deepface = None
 _face_recognition = None
+_cascade = None
 
 try:  # pragma: no cover - environment dependent
     import cv2  # type: ignore
     _cv2 = cv2
-    # OpenCV ships Haar cascades inside the wheel.
+    # OpenCV ships Haar cascades inside the wheel. Loaded once at import time —
+    # this is the "load the model once when the server starts" requirement.
     _cascade = cv2.CascadeClassifier(
         cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
     )
@@ -64,16 +79,70 @@ try:  # pragma: no cover - optional dependency
 except Exception:  # pragma: no cover
     _face_recognition = None
 
+# Once-only model registry for the optional heavy engines (deepface /
+# face_recognition). Guarded by a lock so a burst of concurrent logins never
+# loads the model twice.
+_MODEL_LOCK = threading.Lock()
+_MODEL_CACHE = {}
+
+
+def _load_deepface_model(model_name: str = "Facenet"):
+    """Load (once) and return the DeepFace embedding model."""
+    key = f"deepface:{model_name}"
+    with _MODEL_LOCK:
+        if key not in _MODEL_CACHE:
+            from deepface.commons import functions  # type: ignore
+            _MODEL_CACHE[key] = functions.load_model(
+                model_name=model_name,
+                task="facial_recognition",
+            )
+        return _MODEL_CACHE[key]
+
+
+# ---------------------------------------------------------------------------
+# Engine selection (settings.FACE_ENGINE, cached)
+# ---------------------------------------------------------------------------
+_ENGINE_CACHE = {}  # {requested_engine: resolved_engine} — respects override_settings
+
+
+def _resolve_engine() -> str:
+    """Pick the active engine honouring settings.FACE_ENGINE availability.
+
+    "opencv" (default) → Haar cascade detection + LBP histogram embedding.
+    Falls back gracefully to the deterministic mock when nothing is installed.
+    Resolution is cached per requested value so runtime lookups stay free while
+    tests using override_settings(FACE_ENGINE=...) still see the right engine.
+    """
+    requested = (getattr(settings, "FACE_ENGINE", "opencv") or "opencv").strip().lower()
+    if requested in _ENGINE_CACHE:
+        return _ENGINE_CACHE[requested]
+
+    order = {
+        "auto": ("deepface", "face_recognition", "opencv", "mock"),
+        "deepface": ("deepface", "opencv", "mock"),
+        "face_recognition": ("face_recognition", "opencv", "mock"),
+        "opencv": ("opencv", "mock"),
+        "mock": ("mock",),
+    }.get(requested, ("opencv", "mock"))
+
+    availability = {
+        "deepface": _deepface is not None,
+        "face_recognition": _face_recognition is not None,
+        "opencv": _cv2 is not None,
+        "mock": True,
+    }
+    resolved = "mock"
+    for engine in order:
+        if availability[engine]:
+            resolved = engine
+            break
+    _ENGINE_CACHE[requested] = resolved
+    return resolved
+
 
 def engine_status() -> str:
     """Human description of the active face engine (for admin UI/debug)."""
-    if _deepface is not None:
-        return "deepface"
-    if _face_recognition is not None:
-        return "face_recognition"
-    if _cv2 is not None:
-        return "opencv"
-    return "mock"
+    return _resolve_engine()
 
 
 def is_demo_mode() -> bool:
@@ -110,57 +179,125 @@ def detect_face(image_bytes: bytes) -> bool:
     return len(faces) > 0
 
 
+def _brightness_of(gray) -> Optional[float]:
+    """Mean luminance (0-255) of a grayscale frame, or None when unavailable."""
+    try:
+        import numpy as np
+        return float(np.mean(gray))
+    except Exception:  # pragma: no cover
+        return None
+
+
+def analyze_frame(image_bytes: bytes) -> dict:
+    """Single-pass frame analysis: decode → detect → lighting → embedding.
+
+    Returns a dict with the keys:
+        ok         bool   — True when exactly one face is usable
+        embedding  list|None — L2-normalised feature vector (None on failure)
+        faces      int    — number of frontal faces found
+        face_box   tuple|None — (x, y, w, h) of the primary face
+        brightness float|None — mean luminance of the decoded frame
+        error      str|None — "undecodable" | "no_face" | "multiple_faces"
+                              | "low_light" | None
+
+    This replaces the old detect-then-extract double scan: the frame is
+    decoded and scanned exactly once per request.
+    """
+    if _cv2 is None or _cascade is None:
+        # Mock mode: accept any reasonably-sized payload, deterministic vector.
+        return {
+            "ok": True,
+            "embedding": _mock_embedding(image_bytes),
+            "faces": 1,
+            "face_box": None,
+            "brightness": None,
+            "error": None,
+        }
+
+    img = _decode_image(image_bytes)
+    if img is None:
+        return {"ok": False, "embedding": None, "faces": 0, "face_box": None,
+                "brightness": None, "error": "undecodable"}
+
+    gray = _cv2.cvtColor(img, _cv2.COLOR_BGR2GRAY)
+    brightness = _brightness_of(gray)
+    faces = _cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(60, 60))
+
+    max_faces = int(getattr(settings, "FACE_MAX_FACES", 1))
+    if len(faces) == 0:
+        return {"ok": False, "embedding": None, "faces": 0, "face_box": None,
+                "brightness": brightness, "error": "no_face"}
+    if len(faces) > max_faces:
+        return {"ok": False, "embedding": None, "faces": len(faces),
+                "face_box": tuple(int(v) for v in faces[0]),
+                "brightness": brightness, "error": "multiple_faces"}
+
+    box = tuple(int(v) for v in faces[0])
+    min_brightness = float(getattr(settings, "FACE_MIN_BRIGHTNESS", 40))
+    if brightness is not None and brightness < min_brightness:
+        return {"ok": False, "embedding": None, "faces": 1, "face_box": box,
+                "brightness": brightness, "error": "low_light"}
+
+    embedding = _embed_from_gray(gray, box)
+    return {"ok": embedding is not None, "embedding": embedding, "faces": 1,
+            "face_box": box, "brightness": brightness, "error": None}
+
+
 # ---------------------------------------------------------------------------
 # Embedding extraction
 # ---------------------------------------------------------------------------
 def extract_embedding(image_bytes: bytes) -> Optional[list]:
     """Return a normalised feature vector for a face image (or None).
 
-    Preferred order: DeepFace → face_recognition → OpenCV LBP histogram →
-    deterministic mock. The mock embedding is stable per-image so the whole
-    pipeline remains exercisable without the ML packages.
+    Engine order follows settings.FACE_ENGINE. The fallback chain never throws
+    — the deterministic mock keeps the whole pipeline exercisable without the
+    ML packages.
     """
-    if _deepface is not None:
-        try:
-            from PIL import Image
-            img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-            rep = _deepface.represent(img_path=img, model_name="Facenet", enforce_detection=False)[0]
-            return _l2(rep.get("embedding") or rep.get("face_embedding"))
-        except Exception as exc:  # pragma: no cover
-            logger.warning("DeepFace embedding failed, falling back: %s", exc)
-
-    if _face_recognition is not None:
-        try:
-            img = _face_recognition.load_image_file(io.BytesIO(image_bytes))
-            locs = _face_recognition.face_locations(img)
-            if locs:
-                emb = _face_recognition.face_encodings(img, known_face_locations=locs[:1])
-                if emb:
-                    return _l2(list(emb[0]))
-        except Exception as exc:  # pragma: no cover
-            logger.warning("face_recognition embedding failed, falling back: %s", exc)
-
-    if _cv2 is not None:
-        emb = _opencv_embedding(image_bytes)
-        if emb is not None:
-            return emb
-
+    engine = _resolve_engine()
+    try:
+        if engine == "deepface" and _deepface is not None:
+            return _deepface_embedding(image_bytes)
+        if engine == "face_recognition" and _face_recognition is not None:
+            return _fr_embedding(image_bytes)
+        if engine == "opencv" and _cv2 is not None:
+            return _opencv_embedding(image_bytes)
+    except Exception as exc:  # pragma: no cover
+        logger.warning("Face engine %s failed, falling back: %s", engine, exc)
     return _mock_embedding(image_bytes)
 
 
-def _opencv_embedding(image_bytes: bytes) -> Optional[list]:
-    """Local-binary-pattern-style histogram embedding (pure OpenCV/numpy)."""
+def _deepface_embedding(image_bytes: bytes) -> Optional[list]:
+    """Facenet-style embedding via the (once-loaded) DeepFace model."""
+    from PIL import Image
+    model = _load_deepface_model("Facenet")
+    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    rep = _deepface.represent(
+        img_path=img,
+        model=model,
+        enforce_detection=False,
+        align=False,
+        detector_backend="skip",
+    )[0]
+    return _l2(rep.get("embedding") or rep.get("face_embedding"))
+
+
+def _fr_embedding(image_bytes: bytes) -> Optional[list]:
+    """dlib face_recognition embedding (128-d). Model loads once per process."""
+    img = _face_recognition.load_image_file(io.BytesIO(image_bytes))
+    locs = _face_recognition.face_locations(img)
+    if locs:
+        emb = _face_recognition.face_encodings(img, known_face_locations=locs[:1])
+        if emb:
+            return _l2(list(emb[0]))
+    return None
+
+
+def _embed_from_gray(gray, box) -> Optional[list]:
+    """Local-binary-pattern histogram embedding from a grayscale frame + box."""
     try:
         import numpy as np
-        img = _decode_image(image_bytes)
-        if img is None:
-            return None
-        gray = _cv2.cvtColor(img, _cv2.COLOR_BGR2GRAY)
-        if _cascade is not None:
-            faces = _cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(60, 60))
-            if len(faces):
-                x, y, w, h = faces[0]
-                gray = gray[y:y + h, x:x + w]
+        x, y, w, h = box
+        gray = gray[y:y + h, x:x + w]
         gray = _cv2.resize(gray, (128, 128))
         # Uniform-ish local binary pattern over 8 neighbours.
         block = gray[1:-1, 1:-1]
@@ -178,8 +315,25 @@ def _opencv_embedding(image_bytes: bytes) -> Optional[list]:
         hist /= (hist.sum() or 1.0)
         return _l2(list(hist))
     except Exception as exc:  # pragma: no cover
-        logger.warning("OpenCV embedding failed, falling back to mock: %s", exc)
+        logger.warning("OpenCV embedding failed: %s", exc)
         return None
+
+
+def _opencv_embedding(image_bytes: bytes) -> Optional[list]:
+    """Backwards-compatible wrapper: decode + detect + LBP embedding."""
+    if _cv2 is None:
+        return None
+    img = _decode_image(image_bytes)
+    if img is None:
+        return None
+    gray = _cv2.cvtColor(img, _cv2.COLOR_BGR2GRAY)
+    if _cascade is not None:
+        faces = _cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(60, 60))
+        if len(faces):
+            x, y, w, h = faces[0]
+            gray = gray[y:y + h, x:x + w]
+    gray = _cv2.resize(gray, (128, 128))
+    return _embed_from_gray(gray, (0, 0, 128, 128))
 
 
 def _mock_embedding(image_bytes: bytes) -> list:
@@ -262,6 +416,10 @@ def match_embeddings(stored_blob: str, live_vector: list) -> dict:
     if stored is None:
         return {"matched": False, "confidence": 0.0, "threshold": threshold,
                 "similarity": 0.0, "reason": "Stored face embedding could not be decrypted."}
+    if len(stored) != len(live_vector):
+        return {"matched": False, "confidence": 0.0, "threshold": threshold,
+                "similarity": 0.0,
+                "reason": "Face profile was created with a different model. Please re-register your face."}
     sim = cosine_similarity(stored, live_vector)
     confidence = confidence_percent(stored, live_vector)
     matched = confidence >= threshold * 100.0
@@ -281,8 +439,11 @@ def validate_liveness(payload: dict) -> tuple:
     """Server-side liveness gate.
 
     payload is the verify-face body. Returns (ok: bool, liveness_score: float).
-    Requires a detected face plus the client's reported liveness checks to
-    clear the configured minimums.
+
+    Mode (settings.FACE_LIVENESS_MODE, default "relaxed"):
+      * relaxed — ONE lightweight gesture is enough: the user blinks once OR
+        turns their head slightly (spec: "Blink once OR turn head slightly").
+      * strict  — the original behaviour: blink AND head-turn both required.
     """
     try:
         liveness = float(payload.get("liveness_score", 0))
@@ -299,17 +460,18 @@ def validate_liveness(payload: dict) -> tuple:
     head_ok = bool(payload.get("head_turn_done") or payload.get("head_movement_ok"))
 
     min_liveness = float(getattr(settings, "FACE_MIN_LIVENESS", 50))
-    min_samples = int(getattr(settings, "FACE_MIN_SAMPLES", 3))
+    min_samples = int(getattr(settings, "FACE_MIN_SAMPLES", 1))
+    mode = (getattr(settings, "FACE_LIVENESS_MODE", "relaxed") or "relaxed").strip().lower()
 
-    if liveness < min_liveness:
-        return False, liveness
-    if blinks < 1:
-        return False, liveness
     if samples < min_samples:
         return False, liveness
-    if not head_ok:
+    if liveness < min_liveness:
         return False, liveness
-    return True, liveness
+
+    if mode == "strict":
+        return (blinks >= 1 and head_ok), liveness
+    # relaxed — any single gesture is sufficient.
+    return (blinks >= 1 or head_ok), liveness
 
 
 # Backwards-compatible alias used by the demo e2e helper.

@@ -215,6 +215,10 @@ async function handleLogin(e) {
   const identifier = document.getElementById("identifier").value.trim();
   const password = document.getElementById("password").value;
 
+  // Kick off the face-api model download in the background while the password
+  // is being checked — by the time the face panel appears the models are warm.
+  if (typeof FaceAuth.ensureLoaded === "function") FaceAuth.ensureLoaded();
+
   clearFieldErrors();
   if (!identifier || !password) {
     if (!identifier) showFieldErrors({ identifier: "Email or username is required." });
@@ -291,17 +295,36 @@ function showFaceStep() {
     // User must (re)register a face before verifying.
     if (status) status.textContent = I18n.t("face_need_register");
     if (startBtn) startBtn.textContent = I18n.t("face_register_now");
+    startBtn.classList.remove("hidden");
     faceState.mode = "register";
   } else {
     if (status) status.textContent = I18n.t("face_verify_prompt");
-    if (startBtn) startBtn.textContent = I18n.t("face_start_verify");
+    // Verify is fully automatic — no manual capture/start button needed.
+    if (startBtn) startBtn.classList.add("hidden");
     faceState.mode = "verify";
   }
   if (challenge) challenge.textContent = "";
   if (degraded) degraded.classList.add("hidden");
+  setFaceStep(1);
   document.getElementById("face-video").classList.add("hidden");
   document.getElementById("credentials-card").classList.add("hidden");
   formCard.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  // Show the webcam immediately after the password is verified — no click.
+  if (faceState.mode === "verify") {
+    setTimeout(startFaceFlow, 80);
+  }
+}
+
+/** Highlight progress steps 1 (Detecting) / 2 (Verifying) / 3 (Success). */
+function setFaceStep(n) {
+  const steps = document.querySelectorAll("#face-progress .face-step");
+  steps.forEach((el, i) => {
+    const idx = i + 1;
+    el.classList.toggle("active", idx === n);
+    el.classList.toggle("done", idx < n);
+    el.classList.toggle("success", idx === 3 && n === 3);
+  });
 }
 
 function hideFaceStep() {
@@ -356,25 +379,53 @@ function startFaceFlow() {
     return;
   }
 
-  // VERIFY flow.
+  // VERIFY flow — fully automatic, single-frame.
+  let verifyRetries = 0;
   FaceAuth.startVerify({
     video,
     onDegraded: showDegradedActions,
     onStatus: (msg, ok) => { if (status) { status.textContent = msg; status.classList.toggle("ok", !!ok); } },
     onChallenge: (msg) => { if (challenge) challenge.textContent = msg; },
+    onProgress: (phase) => {
+      if (phase === "detecting") setFaceStep(1);
+      else if (phase === "verifying") setFaceStep(2);
+    },
     onResult: async (payload) => {
       if (degraded) degraded.classList.add("hidden");
-      status.textContent = I18n.t("face_verifying");
+      setFaceStep(2);
+      status.textContent = I18n.t("face_verifying_identity");
+      status.classList.remove("ok");
       try {
         const data = await Api.verifyFace({ face_token: faceState.token, ...payload });
         const user = Api.saveSession(data);
+        setFaceStep(3);
+        status.textContent = I18n.t("face_login_success");
+        status.classList.add("ok");
         UI.hideLoading();
         UI.toast(data.message || "Face authentication successful!", "success");
-        redirectAfterLogin(user);
+        FaceAuth.stop();
+        setTimeout(() => redirectAfterLogin(user), 650); // let the success step show
       } catch (err) {
-        startBtn.disabled = false;
-        status.textContent = err.message;
-        UI.toast(err.message, "error");
+        verifyRetries += 1;
+        // Retryable: face mismatch (401) or a server-side frame rejection such
+        // as "Multiple faces detected" / "Lighting too low" (400 + face field).
+        const retryable = err && verifyRetries <= 3 &&
+          (err.status === 401 || (err.status === 400 && err.data && err.data.face));
+        if (retryable) {
+          status.textContent = err.message;
+          status.classList.remove("ok");
+          UI.toast(err.message, "error");
+          setFaceStep(1);
+          setTimeout(() => FaceAuth.retryVerify(), 800);
+        } else {
+          // Terminal failure — stop the camera and offer a manual retry.
+          FaceAuth.stop();
+          startBtn.classList.remove("hidden");
+          startBtn.disabled = false;
+          startBtn.textContent = I18n.t("face_start_verify");
+          status.textContent = err.message;
+          UI.toast(err.message, "error");
+        }
       }
     },
     onError: (err) => { startBtn.disabled = false; status.textContent = err.message; UI.toast(err.message, "error"); },

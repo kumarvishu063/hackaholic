@@ -15,6 +15,7 @@ POST /api/auth/notifications/read/ mark one or all notifications as read
 import base64
 import io
 import logging
+import time
 
 from django.conf import settings
 from rest_framework import status
@@ -543,25 +544,41 @@ def _b64decode_image(payload: str) -> bytes | None:
 
 
 class VerifyFaceView(APIView):
-    """Redeem a face challenge: live frame + liveness → JWT token pair.
+    """Redeem a face challenge: ONE live frame + liveness → JWT token pair.
+
+    Optimised single-frame flow:
+        decode token ──► fetch ONLY the user's face fields ──► liveness gate
+        ──► analyze_frame (detect + lighting + embed in one pass) ──► match
 
     Enforces: valid short-lived face_token, a detectable face in the frame,
-    liveness evidence (blinks, head-turn, samples) above thresholds, and —
-    unless FACE_DEMO_MODE — a cosine-similarity match ≥ 90%.
+    lighting + single-face checks, lightweight liveness evidence, and — unless
+    FACE_DEMO_MODE — a cosine-similarity match ≥ 90%. The response includes
+    `processing_ms` so clients can verify the sub-500 ms goal.
     """
 
     # No header authentication — the face-challenge token travels in the body.
     authentication_classes = []
     permission_classes = [AllowAny]
 
+    # Project only the fields this endpoint touches (token response needs the
+    # public profile, audit needs email). Everything else on the User document
+    # (history, docs, notifications) stays off the wire.
+    _FACE_FIELDS = (
+        "id", "role", "account_status", "is_active",
+        "face_registered", "face_embedding", "failed_login_attempts",
+        "full_name", "email", "username", "phone", "department",
+        "employee_id", "office_name", "application_status", "created_at",
+    )
+
     def post(self, request):
+        t0 = time.perf_counter()
         serializer = FaceVerifySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
         # 1. Validate the short-lived face challenge token.
         payload = decode_token(data["face_token"], expected_type="face_challenge")
-        user = User.objects(id=payload.get("user_id")).first()
+        user = User.objects(id=payload.get("user_id")).only(*self._FACE_FIELDS).first()
         if user is None or not user.is_active:
             raise AuthenticationFailed("User account is not active.")
         if not user.is_staff_applicant:
@@ -575,29 +592,47 @@ class VerifyFaceView(APIView):
                 "No face is registered on this account. Please register your face first."
             )
 
-        # 2. Liveness gate (server-side).
+        # 2. Liveness gate (server-side) — relaxed: blink OR head-turn.
         liveness_ok, liveness_score = face_auth.validate_liveness(data)
         if not liveness_ok:
             _record_login(user, "password+face", False,
                           detail="liveness check failed", request=request)
             raise AuthenticationFailed("Liveness check failed. Please try again.")
 
-        # 3. Decode & verify the live frame.
+        # 3. Single-pass frame analysis (decode → detect → lighting → embed).
         raw = _b64decode_image(data["image"])
         if raw is None:
             raise ValidationError({"image": "Could not decode the face image."})
-        if not face_auth.is_demo_mode() and not face_auth.detect_face(raw):
+
+        analysis = face_auth.analyze_frame(raw)
+        demo = face_auth.is_demo_mode()
+
+        if analysis["error"] == "undecodable":
+            raise ValidationError({"image": "Could not decode the face image."})
+        if analysis["error"] == "multiple_faces":
+            _record_login(user, "password+face", False,
+                          detail="multiple faces detected", request=request)
+            raise ValidationError({"face": "Multiple faces detected. Please ensure only you are in the frame."})
+        if analysis["error"] == "low_light":
+            _record_login(user, "password+face", False,
+                          detail="poor lighting", request=request)
+            raise ValidationError({"face": "Lighting too low. Please move to a brighter area and try again."})
+        if analysis["error"] == "no_face" and not demo:
             _record_login(user, "password+face", False,
                           detail="no face detected", request=request)
             raise AuthenticationFailed("No face was detected in the frame. Please look at the camera.")
 
-        live_vec = face_auth.extract_embedding(raw)
+        # Embedding: prefer the single-pass vector; in demo mode fall back to a
+        # computed vector so confidence reporting stays meaningful.
+        live_vec = analysis.get("embedding")
+        if live_vec is None:
+            live_vec = face_auth.extract_embedding(raw) if demo else None
         if live_vec is None:
             raise AuthenticationFailed("Could not extract a face embedding. Please try again.")
 
         # 4. Biometric comparison (skipped in FACE_DEMO_MODE).
         result = face_auth.match_embeddings(user.face_embedding, live_vec)
-        if face_auth.is_demo_mode():
+        if demo:
             result = {
                 **result,
                 "matched": True,
@@ -613,9 +648,9 @@ class VerifyFaceView(APIView):
                 f"(minimum {result['threshold']:.0f}%). Please try again."
             )
 
-        # 5. Success — issue real tokens.
-        user.failed_login_attempts = 0
-        user.save()
+        # 5. Success — issue real tokens (targeted update, no full-doc save).
+        if user.failed_login_attempts:
+            User.objects(id=user.id).update_one(set__failed_login_attempts=0)
         _record_login(user, "password+face", True,
                       detail=f"face match {result['confidence']:.1f}%",
                       face_score=result["confidence"] / 100.0, request=request)
@@ -623,6 +658,7 @@ class VerifyFaceView(APIView):
         payload_out = _token_response(user)
         payload_out["requires_face"] = True
         payload_out["face_confidence"] = result["confidence"]
+        payload_out["processing_ms"] = round((time.perf_counter() - t0) * 1000, 1)
         payload_out["message"] = "Face authentication successful. Welcome back!"
         return Response(payload_out)
 

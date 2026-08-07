@@ -84,8 +84,16 @@
     </div>
 
     <div class="face-auth-panel">
+      <!-- 3-step progress: Detecting → Verifying → Success -->
+      <div class="face-progress" id="face-progress" aria-label="Face authentication progress">
+        <div class="face-step" data-step="1"><span class="face-step-dot">1</span><em data-i18n="face_detecting">Detecting Face</em></div>
+        <div class="face-step" data-step="2"><span class="face-step-dot">2</span><em data-i18n="face_verifying_identity">Verifying Identity</em></div>
+        <div class="face-step" data-step="3"><span class="face-step-dot">3</span><em data-i18n="face_login_success">Login Successful</em></div>
+      </div>
+
       <div class="face-video-wrap">
         <video id="face-video" class="face-video hidden" autoplay playsinline muted></video>
+        <canvas id="face-guide" class="face-guide hidden" aria-hidden="true"></canvas>
         <div class="face-placeholder" id="face-placeholder">
           <svg class="icon icon-xl"><use href="{% static 'icons.svg' %}#icon-camera"/></svg>
           <p data-i18n="face_camera_off">Camera preview will appear here.</p>

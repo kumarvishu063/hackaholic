@@ -151,3 +151,53 @@ class Complaint(Document):
 
     def __str__(self):
         return f"{self.complaint_id} [{self.status}] {self.category}"
+
+
+# Canonical resolution-satisfaction options (mirrors the citizen feedback form).
+SATISFACTION_CHOICES = [
+    "Excellent",
+    "Good",
+    "Average",
+    "Poor",
+    "Very Poor",
+]
+
+
+class Feedback(Document):
+    """Citizen feedback submitted once per resolved complaint.
+
+    A complaint owner may submit exactly one feedback record per complaint.
+    `complaint_id` is unique so a citizen can never submit feedback twice for
+    the same complaint (enforced at the model and view layers).
+    """
+
+    meta = {
+        "collection": "feedback",
+        "indexes": [
+            {"fields": ["feedback_id"], "unique": True},
+            {"fields": ["complaint_id"], "unique": True},
+            "citizen_id",
+            "-created_at",
+        ],
+        "ordering": ["-created_at"],
+    }
+
+    feedback_id = StringField(required=True, unique=True)   # e.g. FBK-4K9XM2P7
+    complaint_id = StringField(required=True, unique=True)  # the complaint being rated
+    citizen_id = ObjectIdField(required=True)               # reference to User
+    rating = IntField(required=True, min_value=1, max_value=5)
+    satisfaction = StringField(required=True, choices=SATISFACTION_CHOICES)
+    comment = StringField(required=True, max_length=500, min_length=20)
+    issue_resolved = BooleanField(default=False)
+    use_again = BooleanField(default=False)
+
+    created_at = DateTimeField(default=now_utc)
+
+    def save(self, *args, **kwargs):
+        if not self.feedback_id:
+            from apps.core.utils import generate_code
+            self.feedback_id = generate_code("FBK")
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.feedback_id} r={self.rating} for {self.complaint_id}"

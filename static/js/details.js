@@ -20,6 +20,7 @@ const Details = (() => {
     try {
       complaint = await Api.get("/complaints/" + encodeURIComponent(id) + "/");
       render(complaint);
+      loadFeedback(complaint);
     } catch (err) {
       renderError(err.message);
     }
@@ -116,9 +117,12 @@ const Details = (() => {
           "</section>" +
         "</div>" +
 
-        '<section class="card">' +
-          '<div class="detail-section"><h3>' + I18n.t("timeline") + "</h3>" + timelineHTML(c) + "</div>" +
-        "</section>" +
+        '<div class="detail-aside">' +
+          '<section class="card">' +
+            '<div class="detail-section"><h3>' + I18n.t("timeline") + "</h3>" + timelineHTML(c) + "</div>" +
+          "</section>" +
+          feedbackCardSlot(c, user) +
+        "</div>" +
       "</div>";
   }
 
@@ -210,6 +214,211 @@ const Details = (() => {
     } catch (err) {
       UI.hideLoading();
       UI.toast(err.message, "error");
+    }
+  }
+
+  // ============================================================ citizen feedback
+  // The Citizen Feedback card renders below the timeline, only for the
+  // complaint owner. It loads asynchronously so it never blocks the page.
+  let feedbackRating = 0;
+
+  function feedbackCardSlot(c, user) {
+    if (!user || user.role !== "citizen") return "";
+    return (
+      '<section class="card" id="feedback-slot">' +
+        '<div class="skeleton-card feedback-skeleton"></div>' +
+      "</section>"
+    );
+  }
+
+  function feedbackCardInner(content) {
+    return (
+      '<div class="detail-section">' +
+        "<h3>" + I18n.t("citizen_feedback") + "</h3>" +
+        content +
+      "</div>"
+    );
+  }
+
+  function feedbackEmptyHTML(status) {
+    if (status === "RESOLVED") return feedbackFormHTML();
+    const msg = status === "VERIFIED"
+      ? I18n.t("feedback_verified_msg")
+      : I18n.t("feedback_pending_msg");
+    return feedbackCardInner(
+      '<div class="feedback-note">' +
+        '<svg class="icon icon-accent"><use href="/static/icons.svg#icon-warning"/></svg>' +
+        "<p>" + UI.escapeHtml(msg) + "</p>" +
+      "</div>"
+    );
+  }
+
+  function feedbackFormHTML() {
+    const stars = [1, 2, 3, 4, 5].map(function (n) {
+      return '<button type="button" class="star-btn" data-rating="' + n + '" aria-label="' + n + ' star">★</button>';
+    }).join("");
+    const satisfactionOptions = ["Excellent", "Good", "Average", "Poor", "Very Poor"]
+      .map(function (v) { return '<option value="' + v + '">' + v + "</option>"; })
+      .join("");
+    return feedbackCardInner(
+      '<div class="field fb-field">' +
+        '<label>' + I18n.t("feedback_overall_rating") + ' <span class="req">*</span></label>' +
+        '<div class="star-input" data-rating="0">' + stars + "</div>" +
+        '<p class="field-error hidden" id="fb-rating-err">' + I18n.t("feedback_rating_required") + "</p>" +
+      "</div>" +
+      '<div class="field fb-field">' +
+        '<label>' + I18n.t("feedback_satisfaction") + "</label>" +
+        '<select id="fb-satisfaction">' + satisfactionOptions + "</select>" +
+      "</div>" +
+      '<div class="field fb-field">' +
+        '<label>' + I18n.t("feedback_comment") + ' <span class="req">*</span></label>' +
+        '<textarea id="fb-comment" rows="4" maxlength="500" placeholder="' + UI.escapeHtml(I18n.t("description_placeholder")) + '"></textarea>' +
+        '<p class="hint"><span id="fb-comment-count">0</span>/500 ' + I18n.t("feedback_char_hint") + "</p>" +
+        '<p class="field-error hidden" id="fb-comment-err">' + I18n.t("feedback_comment_required") + "</p>" +
+      "</div>" +
+      feedbackQuestionHTML("fb-resolved", I18n.t("feedback_question_resolved")) +
+      feedbackQuestionHTML("fb-again", I18n.t("feedback_question_again")) +
+      '<div class="form-actions">' +
+        '<button type="button" class="btn btn-primary" id="fb-submit">' + I18n.t("feedback_submit") + "</button>" +
+        '<button type="button" class="btn btn-ghost" id="fb-reset">' + I18n.t("feedback_reset") + "</button>" +
+      "</div>"
+    );
+  }
+
+  function feedbackQuestionHTML(name, label) {
+    return (
+      '<div class="field fb-field">' +
+        "<label>" + label + "</label>" +
+        '<div class="fb-questions">' +
+          '<label class="fb-radio"><input type="radio" name="' + name + '" value="yes"><span>' + I18n.t("yes") + "</span></label>" +
+          '<label class="fb-radio"><input type="radio" name="' + name + '" value="no"><span>' + I18n.t("no") + "</span></label>" +
+        "</div>" +
+      "</div>"
+    );
+  }
+
+  function feedbackSubmittedHTML(fb) {
+    const stars = [1, 2, 3, 4, 5].map(function (n) {
+      return '<span class="star-read' + (n <= fb.rating ? " on" : "") + '">★</span>';
+    }).join("");
+    return feedbackCardInner(
+      '<div class="feedback-success">' +
+        '<svg class="icon icon-success"><use href="/static/icons.svg#icon-check-circle"/></svg>' +
+        "<span>" + I18n.t("feedback_submitted") + "</span>" +
+      "</div>" +
+      '<div class="fb-readonly">' +
+        '<div class="fb-detail"><span class="muted">' + I18n.t("feedback_overall_rating") + ':</span><span class="fb-stars-read">' + stars + "</span></div>" +
+        '<div class="fb-detail"><span class="muted">' + I18n.t("feedback_satisfaction") + ':</span> ' + UI.escapeHtml(fb.satisfaction) + "</div>" +
+        '<div class="fb-detail"><span class="muted">' + I18n.t("feedback_question_resolved") + ':</span> ' + (fb.issue_resolved ? I18n.t("yes") : I18n.t("no")) + "</div>" +
+        '<div class="fb-detail"><span class="muted">' + I18n.t("feedback_question_again") + ':</span> ' + (fb.use_again ? I18n.t("yes") : I18n.t("no")) + "</div>" +
+        '<div class="fb-detail"><span class="muted">' + I18n.t("feedback_submitted_on") + ':</span> ' + UI.formatDate(fb.created_at) + "</div>" +
+        '<div class="fb-comment"><strong>' + I18n.t("feedback_comment") + "</strong><p>" + UI.escapeHtml(fb.comment) + "</p></div>" +
+      "</div>"
+    );
+  }
+
+  async function loadFeedback(c) {
+    const slot = document.getElementById("feedback-slot");
+    if (!slot) return;
+    let fb = null;
+    try {
+      const data = await Api.get("/feedback/" + encodeURIComponent(c.complaint_id) + "/");
+      fb = data && data.feedback ? data.feedback : null;
+    } catch (_e) {
+      fb = null; // can't confirm a submission — the POST guard prevents duplicates
+    }
+    slot.innerHTML = fb ? feedbackSubmittedHTML(fb) : feedbackEmptyHTML(c.status);
+    if (!fb) bindFeedbackForm(c.complaint_id);
+  }
+
+  function bindFeedbackForm(complaintId) {
+    const slot = document.getElementById("feedback-slot");
+    if (!slot) return;
+    const starInput = slot.querySelector(".star-input");
+    const stars = slot.querySelectorAll(".star-btn");
+    const commentInput = document.getElementById("fb-comment");
+    const submitBtn = document.getElementById("fb-submit");
+    const resetBtn = document.getElementById("fb-reset");
+
+    if (resetBtn) resetBtn.addEventListener("click", resetFeedbackForm);
+
+    if (starInput && stars.length) {
+      stars.forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          const rating = Number(btn.dataset.rating);
+          feedbackRating = rating;
+          starInput.setAttribute("data-rating", String(rating));
+          stars.forEach(function (s) {
+            s.classList.toggle("active", Number(s.dataset.rating) <= rating);
+          });
+          const err = document.getElementById("fb-rating-err");
+          if (err) err.classList.add("hidden");
+        });
+      });
+    }
+
+    if (commentInput) {
+      commentInput.addEventListener("input", function () {
+        const count = document.getElementById("fb-comment-count");
+        if (count) count.textContent = String(commentInput.value.length);
+        const err = document.getElementById("fb-comment-err");
+        if (err) err.classList.add("hidden");
+      });
+    }
+
+    if (submitBtn) submitBtn.addEventListener("click", function () { submitFeedback(complaintId); });
+  }
+
+  function resetFeedbackForm() {
+    const slot = document.getElementById("feedback-slot");
+    if (!slot) return;
+    feedbackRating = 0;
+    const starInput = slot.querySelector(".star-input");
+    if (starInput) starInput.setAttribute("data-rating", "0");
+    slot.querySelectorAll(".star-btn").forEach(function (s) { s.classList.remove("active"); });
+    const comment = document.getElementById("fb-comment");
+    if (comment) comment.value = "";
+    const count = document.getElementById("fb-comment-count");
+    if (count) count.textContent = "0";
+    slot.querySelectorAll('input[type="radio"]').forEach(function (r) { r.checked = false; });
+    slot.querySelectorAll(".field-error").forEach(function (e) { e.classList.add("hidden"); });
+  }
+
+  async function submitFeedback(complaintId) {
+    const slot = document.getElementById("feedback-slot");
+    if (!slot) return;
+    const commentInput = document.getElementById("fb-comment");
+    const comment = commentInput ? commentInput.value.trim() : "";
+    let valid = true;
+
+    const ratingErr = document.getElementById("fb-rating-err");
+    if (!feedbackRating) { if (ratingErr) ratingErr.classList.remove("hidden"); valid = false; }
+    const commentErr = document.getElementById("fb-comment-err");
+    if (comment.length < 20) { if (commentErr) commentErr.classList.remove("hidden"); valid = false; }
+    if (!valid) return;
+
+    const satisfactionEl = document.getElementById("fb-satisfaction");
+    const resolvedEl = slot.querySelector('input[name="fb-resolved"]:checked');
+    const againEl = slot.querySelector('input[name="fb-again"]:checked');
+
+    const payload = {
+      complaint_id: complaintId,
+      rating: feedbackRating,
+      satisfaction: satisfactionEl ? satisfactionEl.value : "Good",
+      comment: comment,
+      issue_resolved: resolvedEl ? resolvedEl.value === "yes" : false,
+      use_again: againEl ? againEl.value === "yes" : false,
+    };
+
+    const submitBtn = document.getElementById("fb-submit");
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = I18n.t("loading") + "…"; }
+    try {
+      const fb = await Api.post("/feedback/", payload);
+      slot.innerHTML = feedbackSubmittedHTML(fb);
+      UI.toast(I18n.t("feedback_submitted"), "success");
+    } catch (err) {
+      UI.toast(err.message, "error");
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = I18n.t("feedback_submit"); }
     }
   }
 

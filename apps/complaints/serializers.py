@@ -2,7 +2,7 @@
 
 from rest_framework import serializers
 
-from apps.complaints.models import CATEGORY_CHOICES, Complaint
+from apps.complaints.models import CATEGORY_CHOICES, SATISFACTION_CHOICES, Complaint, Feedback
 from apps.core.utils import utc_to_ist
 
 
@@ -38,6 +38,17 @@ class ResolveActionSerializer(serializers.Serializer):
     """Official resolution payload."""
 
     remarks = serializers.CharField(required=False, allow_blank=True, max_length=2000)
+
+
+class FeedbackCreateSerializer(serializers.Serializer):
+    """Validates the citizen feedback payload for a resolved complaint."""
+
+    complaint_id = serializers.CharField()
+    rating = serializers.IntegerField(min_value=1, max_value=5)
+    satisfaction = serializers.ChoiceField(choices=SATISFACTION_CHOICES)
+    comment = serializers.CharField(min_length=20, max_length=500)
+    issue_resolved = serializers.BooleanField(required=False, default=False)
+    use_again = serializers.BooleanField(required=False, default=False)
 
 
 # ---------------------------------------------------------------------------
@@ -84,3 +95,17 @@ def serialize_detail(complaint: Complaint, citizen_name: str = "", show_pin: boo
         "sha256_hash": complaint.sha256_hash,
     })
     return payload
+
+
+def serialize_feedback(feedback: Feedback) -> dict:
+    """Compact representation of a single citizen feedback record."""
+    return {
+        "feedback_id": feedback.feedback_id,
+        "complaint_id": feedback.complaint_id,
+        "rating": feedback.rating,
+        "satisfaction": feedback.satisfaction,
+        "comment": feedback.comment,
+        "issue_resolved": feedback.issue_resolved,
+        "use_again": feedback.use_again,
+        "created_at": utc_to_ist(feedback.created_at),
+    }

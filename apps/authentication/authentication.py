@@ -101,7 +101,15 @@ class JWTAuthentication(BaseAuthentication):
         if len(parts) != 2 or parts[0] != self.keyword:
             return None
 
-        payload = decode_token(parts[1], expected_type="access")
+        try:
+            payload = decode_token(parts[1], expected_type="access")
+        except exceptions.AuthenticationFailed:
+            # Public auth endpoints (login, register, refresh) shouldn't be blocked by invalid Bearer tokens
+            path = (request.path or "").rstrip("/")
+            if path in ("/api/auth/login", "/api/auth/register", "/api/auth/refresh"):
+                return None
+            raise
+
         user = User.objects(id=payload.get("user_id")).first()
         if user is None or not user.is_active:
             raise exceptions.AuthenticationFailed("User account is not active.")

@@ -1,0 +1,187 @@
+================================================================================
+JanSetu — Face Authentication Performance Optimization Specification
+================================================================================
+Goal: Optimize the existing Face Authentication system for a much faster login
+experience without compromising security.
+
+--------------------------------------------------------------------------------
+Current Problem
+--------------------------------------------------------------------------------
+- Face verification takes too long (5-15 seconds).
+- Users experience noticeable delays before entering the Validator or Official
+  dashboard.
+
+Objective
+--------------------------------------------------------------------------------
+Reduce the complete face authentication process to LESS THAN 2 SECONDS on a
+normal laptop with a webcam.
+
+--------------------------------------------------------------------------------
+1. Performance Optimizations
+--------------------------------------------------------------------------------
+Face Detection
+- Detect the face in real time using OpenCV Haar Cascade or MediaPipe Face
+  Detection.
+- Process webcam frames at 5-10 FPS instead of every frame.
+- Stop processing immediately after a valid face is detected.
+
+Face Recognition
+- Replace any heavy recognition model (VGG-Face, FaceNet512, etc.) with a
+  lightweight and faster model such as:
+    * ArcFace
+    * FaceNet
+    * Dlib face_recognition
+- Compute and store the facial embedding only ONCE during registration.
+- During login, compare the live embedding with the stored embedding instead of
+  rebuilding the database every login.
+
+Backend Optimization
+- Load the face recognition model only once when the Django server starts.
+- Do not reload the model for every login request.
+- Cache loaded models in memory.
+- Avoid unnecessary database queries.
+- Fetch only the logged-in user's face embedding.
+- Use asynchronous API calls where appropriate.
+
+--------------------------------------------------------------------------------
+2. Verification Flow
+--------------------------------------------------------------------------------
+Current:
+  Password -> Camera -> Capture many frames -> Process all frames -> Verify
+  -> Dashboard
+
+Replace with:
+  Password
+     |
+     v
+  Open Camera
+     |
+     v
+  Detect one clear face
+     |
+     v
+  Capture one high-quality frame automatically
+     |
+     v
+  Generate embedding
+     |
+     v
+  Compare with stored embedding
+     |
+     v
+  If confidence >= 90% -> Login Success
+  Otherwise -> Retry
+
+--------------------------------------------------------------------------------
+3. Camera Improvements
+--------------------------------------------------------------------------------
+- Automatically capture the face once it is centered.
+- Show a face guide rectangle.
+- Display guidance messages:
+    "Center your face"
+    "Move closer"
+    "Lighting too low"
+    "Face detected"
+- No manual capture button required.
+
+--------------------------------------------------------------------------------
+4. Liveness Detection
+--------------------------------------------------------------------------------
+Keep lightweight liveness detection:
+- Blink once
+  OR
+- Turn head slightly left/right
+
+Avoid expensive anti-spoofing models that slow authentication significantly.
+
+--------------------------------------------------------------------------------
+5. Frontend
+--------------------------------------------------------------------------------
+- Show webcam immediately after password verification.
+- Display a progress indicator:
+    "Detecting Face..."
+    "Verifying Identity..."
+    "Login Successful..."
+- Add loading animation.
+- Smooth transitions.
+- Total verification time should feel instant.
+
+--------------------------------------------------------------------------------
+6. Database Optimization
+--------------------------------------------------------------------------------
+Store only:
+- User ID
+- Face Embedding
+- Registration Timestamp
+
+Do not store duplicate embeddings.
+
+--------------------------------------------------------------------------------
+7. API Optimization
+--------------------------------------------------------------------------------
+Create a dedicated endpoint:
+
+    POST /api/auth/verify-face
+
+The endpoint should:
+- Accept one captured frame.
+- Generate embedding.
+- Compare against the stored embedding.
+- Return:
+    - authentication status
+    - confidence score
+    - JWT token
+    - user role
+
+Response time should be under 500 ms whenever possible.
+
+--------------------------------------------------------------------------------
+8. Security (must be maintained)
+--------------------------------------------------------------------------------
+- JWT Authentication
+- bcrypt password hashing
+- Role-Based Access Control
+- Encrypted face embeddings (- Fernet)
+- HTTPS support
+- Audit logs
+
+--------------------------------------------------------------------------------
+9. Error Handling
+--------------------------------------------------------------------------------
+Handle:
+- No face detected
+- Multiple faces detected
+- Poor lighting
+- Camera unavailable
+- Face mismatch
+
+--------------------------------------------------------------------------------
+10. Code Quality
+--------------------------------------------------------------------------------
+Refactor the face authentication module for:
+- Clean architecture
+- Reusable services
+- Efficient memory usage
+- Minimal CPU usage
+- Reduced API latency
+
+--------------------------------------------------------------------------------
+Final Goal
+--------------------------------------------------------------------------------
+The complete login flow for Validators and Officials should take no more than
+2 seconds:
+
+  Email/Username ->
+  Password ->
+  Instant Camera ->
+  Automatic Face Detection ->
+  Single Frame Verification ->
+  Dashboard
+
+The optimized implementation should integrate seamlessly into the existing
+JanSetu project while preserving accuracy, security, and responsiveness.
+
+================================================================================
+NOTE: This file is a specification / requirements document only. It was added
+      to the project WITHOUT modifying any existing code.
+================================================================================

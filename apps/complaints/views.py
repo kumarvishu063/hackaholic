@@ -36,18 +36,21 @@ from apps.complaints.models import (
     STATUS_RESOLVED,
     STATUS_VERIFIED,
     Complaint,
+    Feedback,
     TimelineEntry,
 )
 from apps.complaints.serializers import (
     ComplaintCreateSerializer,
+    FeedbackCreateSerializer,
     ResolveActionSerializer,
     ValidateActionSerializer,
     serialize_detail,
+    serialize_feedback,
     serialize_list_item,
 )
 from apps.complaints.services import compute_sha256, generate_complaint_id, generate_pin
 from apps.core.pagination import StandardResultsSetPagination
-from apps.core.utils import now_utc
+from apps.core.utils import generate_code, now_utc
 
 # Sort keys exposed to clients (safe allowlist, no injection possible).
 # Values are the real document fields; `-` prefixes are handled in the view.
@@ -434,4 +437,73 @@ class AnalyticsView(APIView):
             "avg_urgency": avg_urgency,
             "trend": trend,
             "generated_at": now_utc(),
+        })
+
+
+# ---------------------------------------------------------------------------
+# Citizen Feedback
+# ---------------------------------------------------------------------------
+class FeedbackCreateView(APIView):
+    """POST /api/feedback/ — submit citizen feedback for a resolved complaint.
+
+    A citizen may submit feedback only for their own complaint, only once, and
+    only after the complaint is marked RESOLVED.
+    """
+
+    permission_classes = [IsCitizen]
+
+    def post(self, request):
+        complaint_id = (request.data.get("complaint_id") or "").strip()
+        complaint = _get_complaint_or_404(complaint_id)
+
+        if complaint.citizen_id != request.user.id:
+            raise PermissionDenied("You can only submit feedback for your own complaints.")
+
+        if complaint.status != STATUS_RESOLVED:
+            raise ValidationError("Feedback can be submitted only after the complaint is resolved.")
+
+        if Feedback.objects(complaint_id=complaint_id).first() is not None:
+            raise ValidationError("You have already submitted feedback for this complaint.")
+
+        serializer = FeedbackCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        feedback = Feedback(
+            complaint_id=complaint_id,
+            citizen_id=request.user.id,
+            rating=data["rating"],
+            satisfaction=data["satisfaction"],
+            comment=data["comment"].strip(),
+            issue_resolved=data.get("issue_resolved", False),
+            use_again=data.get("use_again", False),
+        )
+        feedback.save()
+
+        return Response(serialize_feedback(feedback), status=status.HTTP_201_CREATED)
+
+
+class FeedbackDetailView(APIView):
+    """GET /api/feedback/<complaint_id>/ — the citizen's own feedback (if any).
+
+    Returns `{ "feedback": <payload> | null }` so the detail page can tell an
+    untouched complaint apart from one that already has feedback. Non-owners and
+    non-citizen roles always receive `null` (feedback is citizen-private).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, complaint_id):
+        complaint = _get_complaint_or_404(complaint_id)
+
+        feedback = None
+        is_owner = (
+            request.user.role == "citizen"
+            and complaint.citizen_id == request.user.id
+        )
+        if is_owner:
+            feedback = Feedback.objects(complaint_id=complaint_id).first()
+
+        return Response({
+            "feedback": serialize_feedback(feedback) if feedback else None,
         })

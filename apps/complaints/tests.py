@@ -16,8 +16,10 @@ from apps.complaints.models import (
     STATUS_RESOLVED,
     STATUS_VERIFIED,
     Complaint,
+    Feedback,
     TimelineEntry,
 )
+from apps.complaints.serializers import FeedbackCreateSerializer
 from apps.complaints.services import compute_sha256, generate_complaint_id, generate_pin
 
 
@@ -77,3 +79,70 @@ class ComplaintModelTests(SimpleTestCase):
             sha256_hash="abc",
         )
         assert complaint.status == STATUS_PENDING
+
+
+class FeedbackModelTests(SimpleTestCase):
+
+    def _make(self):
+        return Feedback(
+            complaint_id="JST-TESTFDBK",
+            citizen_id=ObjectId(),
+            rating=4,
+            satisfaction="Good",
+            comment="Very prompt resolution of my water supply issue, thank you.",
+        )
+
+    def test_save_generates_feedback_id(self):
+        fb = self._make()
+        fb.save()
+        assert fb.feedback_id.startswith("FBK-")
+        assert fb.issue_resolved is False
+        assert fb.use_again is False
+        fb.delete()
+
+    def test_round_trip(self):
+        fb = self._make()
+        fb.rating = 5
+        fb.issue_resolved = True
+        fb.save()
+        reloaded = Feedback.objects(complaint_id="JST-TESTFDBK").first()
+        assert reloaded is not None
+        assert reloaded.rating == 5
+        assert reloaded.issue_resolved is True
+        assert reloaded.satisfaction == "Good"
+        reloaded.delete()
+
+
+class FeedbackSerializerTests(SimpleTestCase):
+
+    VALID = {
+        "complaint_id": "JST-ABCD1234",
+        "rating": 5,
+        "satisfaction": "Excellent",
+        "comment": "Fast and transparent resolution, great experience overall.",
+        "issue_resolved": True,
+        "use_again": True,
+    }
+
+    def test_valid_payload(self):
+        serializer = FeedbackCreateSerializer(data=self.VALID)
+        assert serializer.is_valid(), serializer.errors
+
+    def test_comment_too_short_is_invalid(self):
+        data = dict(self.VALID, comment="short")
+        serializer = FeedbackCreateSerializer(data=data)
+        assert not serializer.is_valid()
+        assert "comment" in serializer.errors
+
+    def test_rating_out_of_range_is_invalid(self):
+        data = dict(self.VALID, rating=6)
+        serializer = FeedbackCreateSerializer(data=data)
+        assert not serializer.is_valid()
+        assert "rating" in serializer.errors
+
+    def test_defaults_for_optional_questions(self):
+        data = {k: v for k, v in self.VALID.items() if k not in ("issue_resolved", "use_again")}
+        serializer = FeedbackCreateSerializer(data=data)
+        assert serializer.is_valid(), serializer.errors
+        assert serializer.validated_data["issue_resolved"] is False
+        assert serializer.validated_data["use_again"] is False
